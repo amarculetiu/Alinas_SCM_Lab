@@ -1,0 +1,283 @@
+
+<style>
+  .lab { padding: 1rem 0; font-family: var(--font-sans); }
+  .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
+  .card-full { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 16px; }
+  .card-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .slider-label { font-size: 13px; color: var(--color-text-primary); min-width: 90px; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-val { font-size: 13px; font-weight: 500; min-width: 36px; text-align: right; color: var(--color-text-primary); }
+  .score-area { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .score-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 16px; text-align: center; }
+  .score-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 2px; }
+  .score-val { font-size: 22px; font-weight: 500; }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button { cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: transparent; border-radius: var(--border-radius-md); padding: 7px 16px; font-size: 13px; color: var(--color-text-primary); }
+  button:hover { background: var(--color-background-secondary); }
+  button.primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+  button.primary:hover { opacity: 0.85; }
+  .feedback { font-size: 13px; margin-top: 10px; padding: 8px 12px; border-radius: var(--border-radius-md); display: none; }
+  .feedback.show { display: block; }
+  .feedback.good { background: var(--color-background-success); color: var(--color-text-success); }
+  .feedback.bad { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .feedback.ok { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .level-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-left: 4px; }
+  .diff-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--color-background-info); color: var(--color-text-info); }
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); align-items: center; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  @media (max-width: 600px) { .panel { grid-template-columns: 1fr; } }
+</style>
+
+<div class="lab">
+  <div style="margin-bottom: 1.5rem;">
+    <div style="font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Demand signal decomposition lab</div>
+    <div style="font-size: 14px; color: var(--color-text-secondary);">A mystery demand signal is shown below. Adjust the four sliders to reconstruct it by matching each component. Hit <strong style="font-weight:500">Check answer</strong> when ready.</div>
+  </div>
+
+  <div class="card-full">
+    <div class="card-title">Mystery demand signal <span class="diff-tag" id="diff-label">medium</span></div>
+    <div class="legend-row">
+      <span><span class="dot" style="background:#378ADD;"></span> Target signal</span>
+      <span><span class="dot" style="background:#D85A30;"></span> Your reconstruction</span>
+    </div>
+    <div style="position: relative; width: 100%; height: 220px;">
+      <canvas id="mainChart"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="card-title">Your controls</div>
+      <div class="slider-row">
+        <span class="slider-label">Level</span>
+        <input type="range" min="50" max="350" step="1" value="200" id="s-level" oninput="update()">
+        <span class="slider-val" id="v-level">200</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Trend / week</span>
+        <input type="range" min="-10" max="10" step="0.5" value="0" id="s-trend" oninput="update()">
+        <span class="slider-val" id="v-trend">0</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Seasonality</span>
+        <input type="range" min="0" max="120" step="1" value="0" id="s-seas" oninput="update()">
+        <span class="slider-val" id="v-seas">0</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Noise</span>
+        <input type="range" min="0" max="60" step="1" value="0" id="s-noise" oninput="update()">
+        <span class="slider-val" id="v-noise">0</span>
+      </div>
+      <div class="btn-row">
+        <button class="primary" onclick="checkAnswer()">Check answer</button>
+        <button onclick="newScenario()">New scenario</button>
+        <button onclick="revealAnswer()">Reveal</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Component breakdown</div>
+      <div style="position: relative; width: 100%; height: 200px;">
+        <canvas id="compChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-full">
+    <div class="card-title">Score</div>
+    <div class="score-area">
+      <div class="score-box"><div class="score-label">Level match</div><div class="score-val" id="sc-level">—</div></div>
+      <div class="score-box"><div class="score-label">Trend match</div><div class="score-val" id="sc-trend">—</div></div>
+      <div class="score-box"><div class="score-label">Seasonal match</div><div class="score-val" id="sc-seas">—</div></div>
+      <div class="score-box"><div class="score-label">Overall fit</div><div class="score-val" id="sc-overall">—</div></div>
+    </div>
+  </div>
+
+  <div class="card-full" id="hint-card" style="display:none;">
+    <div class="card-title">Hints</div>
+    <div id="hint-text" style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.7;"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const N = 24;
+const weeks = Array.from({length: N}, (_, i) => `W${i+1}`);
+
+const SCENARIOS = [
+  { level: 180, trend: 3, seas: 40, noise: 10, diff: 'easy', hint: 'Look for an upward slope. The base is around 180 units. There is clear seasonal variation every 4 weeks.' },
+  { level: 250, trend: 0, seas: 80, noise: 5, diff: 'medium', hint: 'No growth trend here — demand is flat on average. But look at those regular peaks every 4 weeks. Strong seasonality!' },
+  { level: 120, trend: -2, seas: 20, noise: 30, diff: 'hard', hint: 'A declining product with significant random variation. Try to see through the noise to find the downward drift.' },
+  { level: 300, trend: 5, seas: 60, noise: 20, diff: 'hard', hint: 'Everything is at play here: high base, growth, seasonality, and noise. Work one component at a time.' },
+  { level: 200, trend: 0, seas: 0, noise: 15, diff: 'easy', hint: 'Pure level with just a little noise. No trend, no seasonality — keep it flat!' },
+];
+
+let seed = 42;
+function seededRand() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 4294967296; }
+
+let target = [];
+let answer = {};
+let noiseArr = [];
+
+function generateTarget(scenario) {
+  seed = Math.floor(Math.random() * 10000);
+  noiseArr = Array.from({length: N}, () => (seededRand() - 0.5) * 2 * scenario.noise);
+  target = Array.from({length: N}, (_, i) => {
+    const seasVal = scenario.seas * Math.sin(2 * Math.PI * i / 4);
+    return scenario.level + scenario.trend * i + seasVal + noiseArr[i];
+  });
+  answer = scenario;
+}
+
+let mainChart, compChart;
+let currentScenario = 1;
+
+function buildSignal(level, trend, seas, noiseAmt) {
+  return Array.from({length: N}, (_, i) => {
+    const seasVal = seas * Math.sin(2 * Math.PI * i / 4);
+    return level + trend * i + seasVal;
+  });
+}
+
+function buildComponents(level, trend, seas) {
+  return {
+    levelArr: Array.from({length: N}, (_, i) => level),
+    trendArr: Array.from({length: N}, (_, i) => trend * i),
+    seasArr: Array.from({length: N}, (_, i) => seas * Math.sin(2 * Math.PI * i / 4)),
+  };
+}
+
+function update() {
+  const level = +document.getElementById('s-level').value;
+  const trend = +document.getElementById('s-trend').value;
+  const seas = +document.getElementById('s-seas').value;
+  const noise = +document.getElementById('s-noise').value;
+  document.getElementById('v-level').textContent = level;
+  document.getElementById('v-trend').textContent = trend >= 0 ? '+' + trend : trend;
+  document.getElementById('v-seas').textContent = seas;
+  document.getElementById('v-noise').textContent = noise;
+
+  const user = buildSignal(level, trend, seas, noise);
+  mainChart.data.datasets[1].data = user;
+  mainChart.update('none');
+
+  const { levelArr, trendArr, seasArr } = buildComponents(level, trend, seas);
+  compChart.data.datasets[0].data = levelArr;
+  compChart.data.datasets[1].data = trendArr;
+  compChart.data.datasets[2].data = seasArr;
+  compChart.update('none');
+}
+
+function checkAnswer() {
+  const level = +document.getElementById('s-level').value;
+  const trend = +document.getElementById('s-trend').value;
+  const seas = +document.getElementById('s-seas').value;
+
+  const levelScore = Math.max(0, 100 - Math.round(Math.abs(level - answer.level) / answer.level * 100));
+  const trendScore = Math.max(0, 100 - Math.round(Math.abs(trend - answer.trend) * 20));
+  const seasScore = Math.max(0, 100 - Math.round(Math.abs(seas - answer.seas) / (answer.seas + 1) * 100));
+
+  const user = buildSignal(level, trend, seas, 0);
+  const cleanTarget = Array.from({length: N}, (_, i) => target[i] - noiseArr[i]);
+  let mse = 0;
+  for (let i = 0; i < N; i++) mse += (user[i] - cleanTarget[i]) ** 2;
+  const rmse = Math.sqrt(mse / N);
+  const range = Math.max(...target) - Math.min(...target) || 1;
+  const overall = Math.max(0, Math.round(100 - (rmse / range) * 100));
+
+  document.getElementById('sc-level').textContent = levelScore + '%';
+  document.getElementById('sc-trend').textContent = trendScore + '%';
+  document.getElementById('sc-seas').textContent = seasScore + '%';
+  document.getElementById('sc-overall').textContent = overall + '%';
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show';
+  if (overall >= 80) {
+    fb.className += ' good';
+    fb.textContent = 'Excellent! You nailed the decomposition. Try a harder scenario!';
+  } else if (overall >= 55) {
+    fb.className += ' ok';
+    fb.textContent = 'Getting close! Check which component score is lowest and adjust that slider.';
+  } else {
+    fb.className += ' bad';
+    fb.textContent = 'Not quite yet. Try reading the hints below for guidance.';
+  }
+
+  document.getElementById('hint-card').style.display = 'block';
+  document.getElementById('hint-text').textContent = answer.hint;
+}
+
+function revealAnswer() {
+  document.getElementById('s-level').value = answer.level;
+  document.getElementById('s-trend').value = answer.trend;
+  document.getElementById('s-seas').value = answer.seas;
+  document.getElementById('s-noise').value = answer.noise;
+  update();
+  checkAnswer();
+}
+
+function newScenario() {
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('hint-card').style.display = 'none';
+  ['sc-level','sc-trend','sc-seas','sc-overall'].forEach(id => document.getElementById(id).textContent = '—');
+  currentScenario = (currentScenario + 1) % SCENARIOS.length;
+  const sc = SCENARIOS[currentScenario];
+  generateTarget(sc);
+  document.getElementById('diff-label').textContent = sc.diff;
+  document.getElementById('s-level').value = 200;
+  document.getElementById('s-trend').value = 0;
+  document.getElementById('s-seas').value = 0;
+  document.getElementById('s-noise').value = 0;
+  update();
+  mainChart.data.datasets[0].data = target;
+  mainChart.update();
+}
+
+function initCharts() {
+  mainChart = new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [
+        { label: 'Target', data: target, borderColor: '#378ADD', borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#378ADD', tension: 0.3, fill: false },
+        { label: 'Yours', data: Array(N).fill(200), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, borderDash: [4, 3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 } } }, x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 12 }, grid: { display: false } } },
+      animation: { duration: 0 }
+    }
+  });
+
+  const { levelArr, trendArr, seasArr } = buildComponents(200, 0, 0);
+  compChart = new Chart(document.getElementById('compChart'), {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [
+        { label: 'Level', data: levelArr, borderColor: '#1D9E75', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+        { label: 'Trend', data: trendArr, borderColor: '#BA7517', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+        { label: 'Seasonal', data: seasArr, borderColor: '#7F77DD', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 10, padding: 8, color: '#888' } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 10 } } }, x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } } },
+      animation: { duration: 0 }
+    }
+  });
+}
+
+generateTarget(SCENARIOS[currentScenario]);
+document.addEventListener('DOMContentLoaded', initCharts);
+setTimeout(initCharts, 50);
+</script>
