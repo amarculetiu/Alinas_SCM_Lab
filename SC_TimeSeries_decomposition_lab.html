@@ -1,283 +1,1132 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demand Signal Decomposition Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  .lab { padding: 1rem 0; font-family: var(--font-sans); }
-  .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
-  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
-  .card-full { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 16px; }
-  .card-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
-  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .slider-label { font-size: 13px; color: var(--color-text-primary); min-width: 90px; }
-  .slider-row input[type=range] { flex: 1; }
-  .slider-val { font-size: 13px; font-weight: 500; min-width: 36px; text-align: right; color: var(--color-text-primary); }
-  .score-area { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-  .score-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 16px; text-align: center; }
-  .score-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 2px; }
-  .score-val { font-size: 22px; font-weight: 500; }
-  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  button { cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: transparent; border-radius: var(--border-radius-md); padding: 7px 16px; font-size: 13px; color: var(--color-text-primary); }
-  button:hover { background: var(--color-background-secondary); }
-  button.primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
-  button.primary:hover { opacity: 0.85; }
-  .feedback { font-size: 13px; margin-top: 10px; padding: 8px 12px; border-radius: var(--border-radius-md); display: none; }
-  .feedback.show { display: block; }
-  .feedback.good { background: var(--color-background-success); color: var(--color-text-success); }
-  .feedback.bad { background: var(--color-background-danger); color: var(--color-text-danger); }
-  .feedback.ok { background: var(--color-background-warning); color: var(--color-text-warning); }
-  .level-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-left: 4px; }
-  .diff-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--color-background-info); color: var(--color-text-info); }
-  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); align-items: center; }
-  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-  @media (max-width: 600px) { .panel { grid-template-columns: 1fr; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --border: #e2ddd6;
+    --accent: #1e3a5f;
+    --accent-light: #eaf0f7;
+    --success: #1a6b3c;
+    --success-bg: #eaf5ee;
+    --warn: #7a4f00;
+    --warn-bg: #fef8ec;
+    --danger: #9b2217;
+    --danger-bg: #fdf0ee;
+    --text: #1a1a1a;
+    --muted: #6b6560;
+    --focus: #0066cc;
+    --easy: #1a6b3c;
+    --easy-bg: #eaf5ee;
+    --easy-border: #a3d4b4;
+    --medium: #7a4f00;
+    --medium-bg: #fef8ec;
+    --medium-border: #f5cc80;
+    --hard: #9b2217;
+    --hard-bg: #fdf0ee;
+    --hard-border: #f5b4ae;
+    --blue: #2563a8;
+    --orange: #c0501a;
+    --green: #1a7a4a;
+    --purple: #6d59c0;
+    --gold: #b07a10;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Skip nav */
+  .skip-link {
+    position: absolute; top: -999px; left: 0;
+    background: var(--focus); color: #fff;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    z-index: 9999; border-radius: 0 0 6px 0; text-decoration: none;
+  }
+  .skip-link:focus { top: 0; }
+
+  .lab-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 18px 48px;
+  }
+
+  /* Header */
+  .lab-header {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 12px 12px 0 0;
+    padding: 18px 24px 16px;
+    margin-bottom: 0;
+  }
+
+  .lab-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .lab-subtitle {
+    font-size: 13px;
+    opacity: 0.75;
+    font-weight: 400;
+  }
+
+  /* Main content card wrapper */
+  .lab-body {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+  }
+
+  .lab-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lab-section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* Instructions collapsible */
+  .instr-panel {
+    background: var(--accent-light);
+    border: 1px solid #c5d4e3;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .instr-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 16px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .instr-toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .instr-toggle-icon { transition: transform 0.25s; font-size: 16px; }
+  .instr-toggle-icon.open { transform: rotate(180deg); }
+
+  .instr-body {
+    display: none;
+    padding: 0 16px 16px;
+    font-size: 13px;
+    color: #2c3e55;
+    line-height: 1.75;
+  }
+
+  .instr-body.show { display: block; }
+  .instr-body p { margin-bottom: 10px; }
+  .instr-body p:last-child { margin-bottom: 0; }
+  .instr-body strong { color: var(--accent); }
+
+  /* Component explainer pills */
+  .component-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 4px;
+  }
+
+  .cpill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .cpill-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .cpill-level { background: #eaf5f2; color: #1a7a4a; border-color: #a3d4c0; }
+  .cpill-trend { background: #fef8ec; color: #b07a10; border-color: #f5d090; }
+  .cpill-seas { background: #f0eeff; color: #5244b0; border-color: #c4bef0; }
+  .cpill-noise { background: #fdecea; color: #9b2217; border-color: #f5b4ae; }
+
+  /* Noise explainer box */
+  .noise-explainer {
+    background: #fdecea;
+    border: 1px solid #f5b4ae;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #6b1a14;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  .noise-explainer strong { color: #9b2217; }
+
+  /* Difficulty selector */
+  .diff-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .diff-label-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .diff-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+
+  .diff-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .diff-btn.easy { background: var(--easy-bg); color: var(--easy); border-color: var(--easy-border); }
+  .diff-btn.easy.active, .diff-btn.easy:hover { background: var(--easy); color: #fff; border-color: var(--easy); }
+
+  .diff-btn.medium { background: var(--medium-bg); color: var(--medium); border-color: var(--medium-border); }
+  .diff-btn.medium.active, .diff-btn.medium:hover { background: var(--medium); color: #fff; border-color: var(--medium); }
+
+  .diff-btn.hard { background: var(--hard-bg); color: var(--hard); border-color: var(--hard-border); }
+  .diff-btn.hard.active, .diff-btn.hard:hover { background: var(--hard); color: #fff; border-color: var(--hard); }
+
+  /* Scenario badge */
+  .scenario-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .diff-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .diff-badge.easy { background: var(--easy-bg); color: var(--easy); border-color: var(--easy-border); }
+  .diff-badge.medium { background: var(--medium-bg); color: var(--medium); border-color: var(--medium-border); }
+  .diff-badge.hard { background: var(--hard-bg); color: var(--hard); border-color: var(--hard-border); }
+
+  .scenario-name {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Chart area */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+  }
+
+  .chart-wrap-sm {
+    position: relative;
+    width: 100%;
+    height: 190px;
+  }
+
+  .legend-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    align-items: center;
+  }
+
+  .leg-item { display: flex; align-items: center; gap: 5px; }
+  .leg-dot { width: 12px; height: 4px; border-radius: 2px; display: inline-block; }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .col-card {
+    background: #faf9f6;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .col-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* Sliders */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .slider-row:last-of-type { margin-bottom: 0; }
+
+  .slider-label {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 86px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .slider-color-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  .slider-row input[type=range]:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .slider-val {
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 42px;
+    text-align: right;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Noise note under slider */
+  .noise-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: -8px;
+    margin-bottom: 12px;
+    padding-left: 96px;
+    line-height: 1.5;
+  }
+
+  /* Action buttons */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover:not(:disabled) { background: #122a46; border-color: #122a46; }
+
+  .btn-secondary { background: #fff; color: var(--accent); border-color: var(--accent); }
+  .btn-secondary:hover:not(:disabled) { background: var(--accent-light); }
+
+  .btn-reveal { background: var(--warn-bg); color: var(--warn); border-color: #d4840a; }
+  .btn-reveal:hover:not(:disabled) { background: #fdefd0; }
+
+  .btn-new { background: #f0f0eb; color: var(--text); border-color: var(--border); }
+  .btn-new:hover:not(:disabled) { background: #e5e4de; }
+
+  /* Score cards */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .score-card {
+    background: #faf9f6;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+
+  .score-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .score-card-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .score-card-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .score-card.good { border-color: var(--easy-border); background: var(--easy-bg); }
+  .score-card.good .score-card-val { color: var(--success); }
+
+  .score-card.ok { border-color: var(--medium-border); background: var(--medium-bg); }
+  .score-card.ok .score-card-val { color: var(--warn); }
+
+  .score-card.bad { border-color: var(--hard-border); background: var(--hard-bg); }
+  .score-card.bad .score-card-val { color: var(--danger); }
+
+  /* Feedback box */
+  .feedback-box {
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 14px;
+    line-height: 1.65;
+    display: none;
+    margin-top: 14px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .feedback-box.show { display: block; }
+  .feedback-box.good { background: var(--success-bg); border: 1px solid var(--easy-border); color: #1a3d28; }
+  .feedback-box.ok { background: var(--warn-bg); border: 1px solid var(--medium-border); color: #4a3000; }
+  .feedback-box.bad { background: var(--danger-bg); border: 1px solid var(--hard-border); color: #5a1510; }
+
+  .feedback-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .feedback-body { font-size: 13px; line-height: 1.7; }
+  .feedback-body + .feedback-body { margin-top: 6px; }
+
+  /* Hint card */
+  .hint-card {
+    background: var(--accent-light);
+    border: 1px solid #c5d4e3;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #1e3a5f;
+    line-height: 1.7;
+    display: none;
+    margin-top: 12px;
+  }
+
+  .hint-card.show { display: block; }
+  .hint-title { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+
+  /* Noise role box */
+  .noise-role-box {
+    background: #fdecea;
+    border: 1px solid #f5b4ae;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #6b1a14;
+    line-height: 1.6;
+    margin-top: 12px;
+    display: none;
+  }
+  .noise-role-box.show { display: block; }
+  .noise-role-title { font-weight: 700; color: #9b2217; margin-bottom: 3px; }
+
+  /* Responsive */
+  @media (max-width: 620px) {
+    .two-col { grid-template-columns: 1fr; }
+    .score-grid { grid-template-columns: repeat(2, 1fr); }
+    .lab-section { padding: 16px; }
+    .slider-label { min-width: 72px; font-size: 12px; }
+    .noise-note { padding-left: 82px; }
+  }
 </style>
+</head>
+<body>
 
-<div class="lab">
-  <div style="margin-bottom: 1.5rem;">
-    <div style="font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Demand signal decomposition lab</div>
-    <div style="font-size: 14px; color: var(--color-text-secondary);">A mystery demand signal is shown below. Adjust the four sliders to reconstruct it by matching each component. Hit <strong style="font-weight:500">Check answer</strong> when ready.</div>
-  </div>
+<a href="#main-lab" class="skip-link">Skip to lab content</a>
 
-  <div class="card-full">
-    <div class="card-title">Mystery demand signal <span class="diff-tag" id="diff-label">medium</span></div>
-    <div class="legend-row">
-      <span><span class="dot" style="background:#378ADD;"></span> Target signal</span>
-      <span><span class="dot" style="background:#D85A30;"></span> Your reconstruction</span>
-    </div>
-    <div style="position: relative; width: 100%; height: 220px;">
-      <canvas id="mainChart"></canvas>
-    </div>
-  </div>
+<div class="lab-wrap">
+  <header class="lab-header" role="banner">
+    <div class="lab-title">Demand Signal Decomposition Lab</div>
+    <div class="lab-subtitle">Supply Chain Management · Time Series Analysis · Ungraded Practice Activity</div>
+  </header>
 
-  <div class="panel">
-    <div class="card">
-      <div class="card-title">Your controls</div>
-      <div class="slider-row">
-        <span class="slider-label">Level</span>
-        <input type="range" min="50" max="350" step="1" value="200" id="s-level" oninput="update()">
-        <span class="slider-val" id="v-level">200</span>
-      </div>
-      <div class="slider-row">
-        <span class="slider-label">Trend / week</span>
-        <input type="range" min="-10" max="10" step="0.5" value="0" id="s-trend" oninput="update()">
-        <span class="slider-val" id="v-trend">0</span>
-      </div>
-      <div class="slider-row">
-        <span class="slider-label">Seasonality</span>
-        <input type="range" min="0" max="120" step="1" value="0" id="s-seas" oninput="update()">
-        <span class="slider-val" id="v-seas">0</span>
-      </div>
-      <div class="slider-row">
-        <span class="slider-label">Noise</span>
-        <input type="range" min="0" max="60" step="1" value="0" id="s-noise" oninput="update()">
-        <span class="slider-val" id="v-noise">0</span>
-      </div>
-      <div class="btn-row">
-        <button class="primary" onclick="checkAnswer()">Check answer</button>
-        <button onclick="newScenario()">New scenario</button>
-        <button onclick="revealAnswer()">Reveal</button>
-      </div>
-      <div class="feedback" id="feedback"></div>
-    </div>
+  <main class="lab-body" id="main-lab">
 
-    <div class="card">
-      <div class="card-title">Component breakdown</div>
-      <div style="position: relative; width: 100%; height: 200px;">
-        <canvas id="compChart"></canvas>
+    <!-- INSTRUCTIONS -->
+    <div class="lab-section">
+      <div class="instr-panel" role="complementary" aria-label="Instructions">
+        <button class="instr-toggle" onclick="toggleInstructions(this)" aria-expanded="false" aria-controls="instrBody">
+          <span>📋 What is this lab and how do I use it?</span>
+          <span class="instr-toggle-icon" aria-hidden="true">▼</span>
+        </button>
+        <div class="instr-body" id="instrBody">
+          <p><strong>Purpose:</strong> In Supply Chain Management, real demand signals are never perfectly smooth. They are made up of four hidden components. This lab teaches you to identify each one by adjusting sliders until your reconstruction matches a mystery signal.</p>
+
+          <div class="component-pills" role="list" aria-label="The four components">
+            <span class="cpill cpill-level" role="listitem"><span class="cpill-dot" style="background:#1a7a4a;" aria-hidden="true"></span> Level — the baseline average demand</span>
+            <span class="cpill cpill-trend" role="listitem"><span class="cpill-dot" style="background:#b07a10;" aria-hidden="true"></span> Trend — steady rise or fall over time</span>
+            <span class="cpill cpill-seas" role="listitem"><span class="cpill-dot" style="background:#5244b0;" aria-hidden="true"></span> Seasonality — repeating peaks and troughs</span>
+            <span class="cpill cpill-noise" role="listitem"><span class="cpill-dot" style="background:#9b2217;" aria-hidden="true"></span> Noise — random, unpredictable variation</span>
+          </div>
+
+          <div class="noise-explainer" role="note" aria-label="About the Noise slider">
+            <strong>🎲 What does the Noise slider do?</strong><br>
+            Noise represents random variation that cannot be predicted or explained — like a sudden one-week spike from an unexpected promotion, or a dip from a delivery delay. In this lab, the <em>noise pattern is fixed</em> for each scenario (you cannot perfectly reproduce it), but the Noise slider controls <em>how much</em> random variation your model expects. Set it to roughly match how "jagged" or irregular the mystery signal looks. A smoother signal = low noise. A very spiky, erratic signal = high noise. Your overall fit score rewards getting the structural components (level, trend, seasonality) right — noise is judged separately.
+          </div>
+
+          <p style="margin-top:12px;"><strong>How to use this lab:</strong></p>
+          <p>1. A mystery demand signal (blue line) is shown in the chart. Study its shape — is it rising? Flat? Are there regular peaks? How jagged is it?</p>
+          <p>2. Adjust the four sliders. Your reconstruction (orange dashed line) will update live as you move them.</p>
+          <p>3. Click <strong>Check Answer</strong> to see how well each component matches. You will receive a score and specific feedback on what to fix.</p>
+          <p>4. Use <strong>Reveal Answer</strong> at any time to see the true values — no penalty. Use <strong>New Scenario</strong> or the difficulty buttons to try a different challenge.</p>
+          <p><strong>This activity is ungraded.</strong> Your results are for your own learning and are not submitted to your instructor.</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="card-full">
-    <div class="card-title">Score</div>
-    <div class="score-area">
-      <div class="score-box"><div class="score-label">Level match</div><div class="score-val" id="sc-level">—</div></div>
-      <div class="score-box"><div class="score-label">Trend match</div><div class="score-val" id="sc-trend">—</div></div>
-      <div class="score-box"><div class="score-label">Seasonal match</div><div class="score-val" id="sc-seas">—</div></div>
-      <div class="score-box"><div class="score-label">Overall fit</div><div class="score-val" id="sc-overall">—</div></div>
+    <!-- DIFFICULTY + SCENARIO -->
+    <div class="lab-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div class="diff-row" role="group" aria-label="Select difficulty">
+          <span class="diff-label-text">Difficulty:</span>
+          <button class="diff-btn easy" onclick="loadDifficulty('easy')" id="btn-easy" aria-pressed="false" aria-label="Easy difficulty">Easy</button>
+          <button class="diff-btn medium" onclick="loadDifficulty('medium')" id="btn-medium" aria-pressed="false" aria-label="Medium difficulty">Medium</button>
+          <button class="diff-btn hard active" onclick="loadDifficulty('hard')" id="btn-hard" aria-pressed="true" aria-label="Hard difficulty">Hard</button>
+        </div>
+        <div class="scenario-meta" aria-live="polite">
+          <span class="diff-badge" id="diffBadge">hard</span>
+          <span class="scenario-name" id="scenarioName">—</span>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="card-full" id="hint-card" style="display:none;">
-    <div class="card-title">Hints</div>
-    <div id="hint-text" style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.7;"></div>
-  </div>
+    <!-- MAIN CHART -->
+    <div class="lab-section">
+      <div class="section-title">Mystery Demand Signal — match the blue line with your sliders</div>
+      <div class="legend-row" aria-label="Chart legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#2563a8;" aria-hidden="true"></span> Target signal (mystery)</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#c0501a; border-top: 2px dashed #c0501a; background:none; width:18px;" aria-hidden="true"></span> Your reconstruction</span>
+      </div>
+      <div class="chart-wrap" role="img" aria-label="Main demand signal chart">
+        <canvas id="mainChart" aria-label="Mystery demand signal and your reconstruction"></canvas>
+      </div>
+    </div>
+
+    <!-- CONTROLS + BREAKDOWN -->
+    <div class="lab-section">
+      <div class="two-col">
+
+        <!-- Sliders -->
+        <div class="col-card" role="group" aria-label="Decomposition controls">
+          <div class="col-card-title">Your decomposition controls</div>
+
+          <div class="slider-row">
+            <label class="slider-label" for="s-level">
+              <span class="slider-color-dot" style="background:#1a7a4a;" aria-hidden="true"></span>
+              Level
+            </label>
+            <input type="range" min="50" max="400" step="1" value="200" id="s-level"
+              oninput="update()" aria-label="Level: baseline average demand" aria-valuemin="50" aria-valuemax="400">
+            <span class="slider-val" id="v-level" aria-live="polite">200</span>
+          </div>
+
+          <div class="slider-row">
+            <label class="slider-label" for="s-trend">
+              <span class="slider-color-dot" style="background:#b07a10;" aria-hidden="true"></span>
+              Trend
+            </label>
+            <input type="range" min="-12" max="12" step="0.5" value="0" id="s-trend"
+              oninput="update()" aria-label="Trend per week" aria-valuemin="-12" aria-valuemax="12">
+            <span class="slider-val" id="v-trend" aria-live="polite">0</span>
+          </div>
+
+          <div class="slider-row">
+            <label class="slider-label" for="s-seas">
+              <span class="slider-color-dot" style="background:#5244b0;" aria-hidden="true"></span>
+              Seasonality
+            </label>
+            <input type="range" min="0" max="150" step="1" value="0" id="s-seas"
+              oninput="update()" aria-label="Seasonality amplitude" aria-valuemin="0" aria-valuemax="150">
+            <span class="slider-val" id="v-seas" aria-live="polite">0</span>
+          </div>
+
+          <div class="slider-row">
+            <label class="slider-label" for="s-noise">
+              <span class="slider-color-dot" style="background:#9b2217;" aria-hidden="true"></span>
+              Noise
+            </label>
+            <input type="range" min="0" max="80" step="1" value="0" id="s-noise"
+              oninput="update()" aria-label="Noise level — random variation" aria-valuemin="0" aria-valuemax="80">
+            <span class="slider-val" id="v-noise" aria-live="polite">0</span>
+          </div>
+          <div class="noise-note" aria-label="Noise slider tip">
+            ↑ Slide right if the signal looks very jagged/erratic. Slide left if it looks smooth.
+          </div>
+
+          <div class="btn-row" role="group" aria-label="Lab actions">
+            <button class="btn btn-primary" onclick="checkAnswer()" id="checkBtn" aria-label="Check your answer and see scores">
+              ✓ Check Answer
+            </button>
+            <button class="btn btn-reveal" onclick="revealAnswer()" id="revealBtn" aria-label="Reveal the correct answer values">
+              💡 Reveal Answer
+            </button>
+            <button class="btn btn-new" onclick="newScenario()" aria-label="Load a new random scenario at the current difficulty">
+              ↺ New Scenario
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Component breakdown chart -->
+        <div class="col-card">
+          <div class="col-card-title">Live component breakdown</div>
+          <div class="chart-wrap-sm" role="img" aria-label="Component breakdown chart showing level, trend, and seasonal lines">
+            <canvas id="compChart" aria-label="Decomposed components: level, trend, seasonality"></canvas>
+          </div>
+          <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;">
+            This chart shows your three structural components separately. Use it to understand how each slider affects the signal shape.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORES -->
+    <div class="lab-section" aria-live="polite" aria-label="Score results">
+      <div class="section-title">Score — appears after you click Check Answer</div>
+      <div class="score-grid" role="list" aria-label="Component scores">
+        <div class="score-card" id="sc-level-card" role="listitem">
+          <div class="score-card-label">Level match</div>
+          <div class="score-card-val" id="sc-level">—</div>
+          <div class="score-card-sub" id="sc-level-sub">not checked</div>
+        </div>
+        <div class="score-card" id="sc-trend-card" role="listitem">
+          <div class="score-card-label">Trend match</div>
+          <div class="score-card-val" id="sc-trend">—</div>
+          <div class="score-card-sub" id="sc-trend-sub">not checked</div>
+        </div>
+        <div class="score-card" id="sc-seas-card" role="listitem">
+          <div class="score-card-label">Seasonal match</div>
+          <div class="score-card-val" id="sc-seas">—</div>
+          <div class="score-card-sub" id="sc-seas-sub">not checked</div>
+        </div>
+        <div class="score-card" id="sc-overall-card" role="listitem">
+          <div class="score-card-label">Overall fit</div>
+          <div class="score-card-val" id="sc-overall">—</div>
+          <div class="score-card-sub" id="sc-overall-sub">not checked</div>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-box" id="feedbackBox" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="feedback-title" id="feedbackTitle">—</div>
+        <div class="feedback-body" id="feedbackBody">—</div>
+        <div class="feedback-body" id="feedbackDetail" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- Noise role explanation (shown after check) -->
+      <div class="noise-role-box" id="noiseRoleBox" role="note" aria-label="About noise in this scenario">
+        <div class="noise-role-title">🎲 About Noise in this scenario</div>
+        <div id="noiseRoleText"></div>
+      </div>
+
+      <!-- Hint -->
+      <div class="hint-card" id="hintCard" role="note" aria-label="Hint for this scenario">
+        <div class="hint-title">💡 Hint</div>
+        <div id="hintText"></div>
+      </div>
+
+    </div>
+
+  </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const N = 24;
 const weeks = Array.from({length: N}, (_, i) => `W${i+1}`);
 
-const SCENARIOS = [
-  { level: 180, trend: 3, seas: 40, noise: 10, diff: 'easy', hint: 'Look for an upward slope. The base is around 180 units. There is clear seasonal variation every 4 weeks.' },
-  { level: 250, trend: 0, seas: 80, noise: 5, diff: 'medium', hint: 'No growth trend here — demand is flat on average. But look at those regular peaks every 4 weeks. Strong seasonality!' },
-  { level: 120, trend: -2, seas: 20, noise: 30, diff: 'hard', hint: 'A declining product with significant random variation. Try to see through the noise to find the downward drift.' },
-  { level: 300, trend: 5, seas: 60, noise: 20, diff: 'hard', hint: 'Everything is at play here: high base, growth, seasonality, and noise. Work one component at a time.' },
-  { level: 200, trend: 0, seas: 0, noise: 15, diff: 'easy', hint: 'Pure level with just a little noise. No trend, no seasonality — keep it flat!' },
-];
+// ── Scenarios by difficulty
+const SCENARIOS = {
+  easy: [
+    {
+      name: 'Steady growth, strong season',
+      level: 150, trend: 4, seas: 70, noise: 5,
+      hint: 'The signal rises clearly from left to right — that is a positive trend. The regular peaks and troughs every 4 weeks are strong seasonality. The signal is smooth, so noise is very low. Start by estimating where the signal begins (level), then how steep the climb is (trend), then how tall the waves are (seasonality).',
+      noiseNote: 'Very low noise (value: 5). The signal is clean and smooth. Almost all the variation you see is either trend or seasonality — not randomness. Keep the noise slider near zero.'
+    },
+    {
+      name: 'Flat demand, very strong season',
+      level: 220, trend: 0, seas: 90, noise: 5,
+      hint: 'No overall growth or decline — the signal does not drift up or down over 24 weeks. But the large, perfectly regular waves every 4 weeks show very strong seasonality. The midpoint of those waves is your level. Trend stays at zero.',
+      noiseNote: 'Almost no noise (value: 5). Every bump and dip you see is part of the seasonal pattern, not randomness. This is a clean signal — keep noise at zero and focus entirely on matching the wave amplitude with the Seasonality slider.'
+    },
+    {
+      name: 'Strong decline, clear season',
+      level: 320, trend: -5, seas: 60, noise: 8,
+      hint: 'The signal starts high and falls steadily over 24 weeks — strong negative trend. Regular waves every 4 weeks add clear seasonality on top. The signal is relatively smooth. Set level to where the signal starts at week 1, trend to a negative value, and match the wave height with seasonality.',
+      noiseNote: 'Low noise (value: 8). The downward slope and seasonal waves are clearly visible. The small irregularities are noise — keep the noise slider low and focus on matching the trend and seasonal structure.'
+    }
+  ],
+  medium: [
+    {
+      name: 'Growing demand, moderate season, some noise',
+      level: 180, trend: 3, seas: 40, noise: 25,
+      hint: 'The signal rises over time (positive trend) but is noticeably rougher than easy scenarios. Moderate seasonality adds waves every 4 weeks, but they are partially obscured by noise. Try to identify the underlying upward slope first, then estimate the wave amplitude.',
+      noiseNote: 'Moderate noise (value: 25). The seasonal peaks and troughs are still visible but less clean than easy scenarios. Some of the irregularity you see is noise, not seasonality — be careful not to over-estimate the Seasonality slider.'
+    },
+    {
+      name: 'Declining product, mild season, noisy',
+      level: 280, trend: -4, seas: 25, noise: 38,
+      hint: 'The signal drifts downward over 24 weeks — negative trend. Mild seasonality is present but harder to see through the noise. Start by identifying the downward direction and the starting level, then look carefully for any faint repeating wave pattern.',
+      noiseNote: 'Higher noise (value: 38) begins to obscure the seasonal pattern. The mild seasonality (value: 25) may be difficult to separate from the random variation. Focus on getting trend and level right first — the wave pattern is subtle.'
+    },
+    {
+      name: 'Flat demand, low season, growing noise',
+      level: 210, trend: 0, seas: 20, noise: 42,
+      hint: 'No trend — the signal does not drift up or down. Very mild seasonality means the waves are faint. Most of the variation you see is noise. This is a bridge to hard difficulty: the structural signal is simple, but noise makes it hard to see.',
+      noiseNote: 'High noise (value: 42) with weak seasonality (value: 20). Much of what you see is random variation. The faint wave pattern is real but easily confused with noise. Set trend to zero, estimate the average level, keep seasonality low, and increase noise to match the roughness.'
+    }
+  ],
+  hard: [
+    {
+      name: 'Rising demand, weak season, very noisy',
+      level: 160, trend: 4, seas: 25, noise: 55,
+      hint: 'All four components are active but the signal is very rough. The upward trend is real but partially hidden by heavy noise. Weak seasonality adds faint waves that are hard to distinguish from randomness. Work one component at a time: find the general upward drift first, then estimate the starting level, then look carefully for any repeating pattern.',
+      noiseNote: 'Very high noise (value: 55) with weak seasonality (value: 25). The seasonal signal is nearly buried in noise. A practical tip: mentally draw a smooth line through the signal to find the trend, then look at residuals for any repeating structure.'
+    },
+    {
+      name: 'Declining, minimal season, extreme noise',
+      level: 320, trend: -5, seas: 15, noise: 65,
+      hint: 'The signal falls over time — but the heavy noise makes it hard to confirm. Seasonality is very weak. This is the hardest structural challenge: you must identify a declining trend through extreme randomness with almost no seasonal pattern to anchor you. Focus on the overall direction across the full 24 weeks.',
+      noiseNote: 'Extreme noise (value: 65) with minimal seasonality (value: 15). The seasonal component is barely visible. Almost all irregular variation is noise. Do not chase every bump — step back and look at the overall sweep of the signal to find the trend.'
+    },
+    {
+      name: 'Explosive growth, no season, very noisy',
+      level: 120, trend: 7, seas: 0, noise: 60,
+      hint: 'The signal grows very steeply — high positive trend starting from a low base. There is no seasonality here: every repeating-looking pattern is just noise. The challenge is identifying the steep growth slope and starting level through a very rough signal. Set seasonality to zero.',
+      noiseNote: 'Very high noise (value: 60) with zero seasonality. Any wave-like pattern you see is random — do not add seasonality. The entire structural signal is trend plus level. Focus on the steep upward direction and estimate how fast it climbs per week.'
+    }
+  ]
+};
 
 let seed = 42;
-function seededRand() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 4294967296; }
+function seededRand() {
+  seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+  return (seed >>> 0) / 4294967296;
+}
 
 let target = [];
 let answer = {};
 let noiseArr = [];
+let currentDiff = 'hard';
+let currentScIdx = 0;
+let mainChart, compChart;
+
+function pickScenario(diff, idx) {
+  const list = SCENARIOS[diff];
+  return list[idx % list.length];
+}
 
 function generateTarget(scenario) {
-  seed = Math.floor(Math.random() * 10000);
+  seed = Math.floor(Math.random() * 99999) + 1;
   noiseArr = Array.from({length: N}, () => (seededRand() - 0.5) * 2 * scenario.noise);
   target = Array.from({length: N}, (_, i) => {
-    const seasVal = scenario.seas * Math.sin(2 * Math.PI * i / 4);
-    return scenario.level + scenario.trend * i + seasVal + noiseArr[i];
+    const s = scenario.seas * Math.sin(2 * Math.PI * i / 4);
+    return scenario.level + scenario.trend * i + s + noiseArr[i];
   });
   answer = scenario;
 }
 
-let mainChart, compChart;
-let currentScenario = 1;
-
-function buildSignal(level, trend, seas, noiseAmt) {
-  return Array.from({length: N}, (_, i) => {
-    const seasVal = seas * Math.sin(2 * Math.PI * i / 4);
-    return level + trend * i + seasVal;
-  });
+function buildSignal(level, trend, seas) {
+  return Array.from({length: N}, (_, i) => level + trend * i + seas * Math.sin(2 * Math.PI * i / 4));
 }
 
 function buildComponents(level, trend, seas) {
   return {
-    levelArr: Array.from({length: N}, (_, i) => level),
+    levelArr: Array.from({length: N}, () => level),
     trendArr: Array.from({length: N}, (_, i) => trend * i),
-    seasArr: Array.from({length: N}, (_, i) => seas * Math.sin(2 * Math.PI * i / 4)),
+    seasArr:  Array.from({length: N}, (_, i) => seas * Math.sin(2 * Math.PI * i / 4)),
   };
 }
 
 function update() {
   const level = +document.getElementById('s-level').value;
   const trend = +document.getElementById('s-trend').value;
-  const seas = +document.getElementById('s-seas').value;
+  const seas  = +document.getElementById('s-seas').value;
   const noise = +document.getElementById('s-noise').value;
+
   document.getElementById('v-level').textContent = level;
-  document.getElementById('v-trend').textContent = trend >= 0 ? '+' + trend : trend;
-  document.getElementById('v-seas').textContent = seas;
+  document.getElementById('v-trend').textContent = (trend >= 0 ? '+' : '') + trend;
+  document.getElementById('v-seas').textContent  = seas;
   document.getElementById('v-noise').textContent = noise;
 
-  const user = buildSignal(level, trend, seas, noise);
-  mainChart.data.datasets[1].data = user;
+  // Guard: skip chart updates if charts not yet initialized
+  if (!mainChart || !compChart) return;
+
+  mainChart.data.datasets[1].data = buildSignal(level, trend, seas);
   mainChart.update('none');
 
-  const { levelArr, trendArr, seasArr } = buildComponents(level, trend, seas);
+  const {levelArr, trendArr, seasArr} = buildComponents(level, trend, seas);
   compChart.data.datasets[0].data = levelArr;
   compChart.data.datasets[1].data = trendArr;
   compChart.data.datasets[2].data = seasArr;
   compChart.update('none');
 }
 
+function scoreComponent(user, ans, scale) {
+  const diff = Math.abs(user - ans);
+  const pct  = diff / (scale || 1);
+  return Math.max(0, Math.round(100 - pct * 100));
+}
+
+function colorClass(score) {
+  if (score >= 80) return 'good';
+  if (score >= 55) return 'ok';
+  return 'bad';
+}
+
+function subLabel(score) {
+  if (score >= 80) return '✓ Good match';
+  if (score >= 55) return '~ Getting close';
+  return '✗ Needs work';
+}
+
 function checkAnswer() {
   const level = +document.getElementById('s-level').value;
   const trend = +document.getElementById('s-trend').value;
-  const seas = +document.getElementById('s-seas').value;
+  const seas  = +document.getElementById('s-seas').value;
 
-  const levelScore = Math.max(0, 100 - Math.round(Math.abs(level - answer.level) / answer.level * 100));
-  const trendScore = Math.max(0, 100 - Math.round(Math.abs(trend - answer.trend) * 20));
-  const seasScore = Math.max(0, 100 - Math.round(Math.abs(seas - answer.seas) / (answer.seas + 1) * 100));
+  // Individual component scores
+  const levelScore = scoreComponent(level, answer.level, Math.max(answer.level, 50));
+  const trendRange = Math.max(Math.abs(answer.trend) + 1, 2);
+  const trendScore = scoreComponent(trend, answer.trend, trendRange * 0.15);
+  const seasScore  = scoreComponent(seas, answer.seas, Math.max(answer.seas + 10, 30));
 
-  const user = buildSignal(level, trend, seas, 0);
-  const cleanTarget = Array.from({length: N}, (_, i) => target[i] - noiseArr[i]);
+  // Overall structural fit (vs clean target without noise)
+  const userSig  = buildSignal(level, trend, seas);
+  const cleanTgt = Array.from({length: N}, (_, i) => target[i] - noiseArr[i]);
   let mse = 0;
-  for (let i = 0; i < N; i++) mse += (user[i] - cleanTarget[i]) ** 2;
+  for (let i = 0; i < N; i++) mse += (userSig[i] - cleanTgt[i]) ** 2;
   const rmse = Math.sqrt(mse / N);
   const range = Math.max(...target) - Math.min(...target) || 1;
-  const overall = Math.max(0, Math.round(100 - (rmse / range) * 100));
+  const overall = Math.max(0, Math.round(100 - (rmse / range) * 120));
 
-  document.getElementById('sc-level').textContent = levelScore + '%';
-  document.getElementById('sc-trend').textContent = trendScore + '%';
-  document.getElementById('sc-seas').textContent = seasScore + '%';
-  document.getElementById('sc-overall').textContent = overall + '%';
-
-  const fb = document.getElementById('feedback');
-  fb.className = 'feedback show';
-  if (overall >= 80) {
-    fb.className += ' good';
-    fb.textContent = 'Excellent! You nailed the decomposition. Try a harder scenario!';
-  } else if (overall >= 55) {
-    fb.className += ' ok';
-    fb.textContent = 'Getting close! Check which component score is lowest and adjust that slider.';
-  } else {
-    fb.className += ' bad';
-    fb.textContent = 'Not quite yet. Try reading the hints below for guidance.';
+  // Update score cards
+  function setCard(id, score) {
+    const card = document.getElementById(`sc-${id}-card`);
+    card.className = `score-card ${colorClass(score)}`;
+    document.getElementById(`sc-${id}`).textContent = score + '%';
+    document.getElementById(`sc-${id}-sub`).textContent = subLabel(score);
   }
 
-  document.getElementById('hint-card').style.display = 'block';
-  document.getElementById('hint-text').textContent = answer.hint;
+  setCard('level', levelScore);
+  setCard('trend', trendScore);
+  setCard('seas', seasScore);
+  setCard('overall', overall);
+
+  // Build per-component feedback
+  const issues = [];
+  if (levelScore < 80) {
+    const dir = level < answer.level ? 'higher' : 'lower';
+    issues.push(`Level (${levelScore}%): Your baseline is off — try moving it ${dir}. The level is where the signal sits on average, ignoring trend and waves.`);
+  }
+  if (trendScore < 80) {
+    const dir = trend < answer.trend ? 'increase the trend (more positive)' : 'decrease the trend (more negative or less positive)';
+    issues.push(`Trend (${trendScore}%): ${dir}. Watch whether the signal is climbing, falling, or flat over the full 24 weeks.`);
+  }
+  if (seasScore < 80) {
+    const dir = seas < answer.seas ? 'increase seasonality' : 'decrease seasonality';
+    issues.push(`Seasonality (${seasScore}%): ${dir}. Compare the height of the repeating waves in the target vs your reconstruction.`);
+  }
+
+  // Feedback box
+  const fb = document.getElementById('feedbackBox');
+  const title = document.getElementById('feedbackTitle');
+  const body  = document.getElementById('feedbackBody');
+  const detail = document.getElementById('feedbackDetail');
+
+  fb.className = 'feedback-box show';
+
+  if (overall >= 82) {
+    fb.classList.add('good');
+    title.textContent = '✓ Excellent decomposition!';
+    body.textContent  = `Overall fit: ${overall}%. You have successfully identified the structural components of this demand signal. Try a harder difficulty or a new scenario to keep building your skills.`;
+    detail.textContent = '';
+  } else if (overall >= 60) {
+    fb.classList.add('ok');
+    title.textContent = '~ Getting there — keep adjusting';
+    body.textContent  = `Overall fit: ${overall}%. You are on the right track. Focus on the component with the lowest score and adjust that slider.`;
+    detail.innerHTML  = issues.length ? '<strong>What to fix:</strong><br>' + issues.join('<br>') : '';
+  } else {
+    fb.classList.add('bad');
+    title.textContent = '✗ Not quite yet — use the hints below';
+    body.textContent  = `Overall fit: ${overall}%. The reconstruction does not yet match the structure of the target signal. Read the specific feedback and the hint card below.`;
+    detail.innerHTML  = issues.length ? '<strong>Component feedback:</strong><br>' + issues.join('<br>') : '';
+  }
+
+  // Show noise explanation
+  const noiseBox = document.getElementById('noiseRoleBox');
+  noiseBox.className = 'noise-role-box show';
+  document.getElementById('noiseRoleText').textContent = answer.noiseNote;
+
+  // Show hint
+  document.getElementById('hintCard').className = 'hint-card show';
+  document.getElementById('hintText').textContent = answer.hint;
 }
 
 function revealAnswer() {
   document.getElementById('s-level').value = answer.level;
   document.getElementById('s-trend').value = answer.trend;
-  document.getElementById('s-seas').value = answer.seas;
+  document.getElementById('s-seas').value  = answer.seas;
   document.getElementById('s-noise').value = answer.noise;
   update();
   checkAnswer();
 }
 
-function newScenario() {
-  document.getElementById('feedback').className = 'feedback';
-  document.getElementById('hint-card').style.display = 'none';
-  ['sc-level','sc-trend','sc-seas','sc-overall'].forEach(id => document.getElementById(id).textContent = '—');
-  currentScenario = (currentScenario + 1) % SCENARIOS.length;
-  const sc = SCENARIOS[currentScenario];
-  generateTarget(sc);
-  document.getElementById('diff-label').textContent = sc.diff;
+function resetUI() {
+  ['sc-level','sc-trend','sc-seas','sc-overall'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  ['sc-level','sc-trend','sc-seas','sc-overall'].forEach(id => {
+    document.getElementById(`${id}-sub`).textContent = 'not checked';
+    document.getElementById(`${id}-card`).className = 'score-card';
+  });
+  document.getElementById('feedbackBox').className = 'feedback-box';
+  document.getElementById('noiseRoleBox').className = 'noise-role-box';
+  document.getElementById('hintCard').className = 'hint-card';
   document.getElementById('s-level').value = 200;
   document.getElementById('s-trend').value = 0;
-  document.getElementById('s-seas').value = 0;
+  document.getElementById('s-seas').value  = 0;
   document.getElementById('s-noise').value = 0;
-  update();
-  mainChart.data.datasets[0].data = target;
-  mainChart.update();
+}
+
+function loadScenario(diff, idx) {
+  resetUI();
+  const sc = pickScenario(diff, idx);
+  generateTarget(sc);
+
+  // Update badge
+  const badge = document.getElementById('diffBadge');
+  badge.textContent = diff;
+  badge.className = `diff-badge ${diff}`;
+  document.getElementById('scenarioName').textContent = sc.name;
+
+  // Guard: only touch charts if they exist
+  if (mainChart && compChart) {
+    mainChart.data.datasets[0].data = target;
+    mainChart.data.datasets[1].data = buildSignal(200, 0, 0);
+    mainChart.update();
+    const {levelArr, trendArr, seasArr} = buildComponents(200, 0, 0);
+    compChart.data.datasets[0].data = levelArr;
+    compChart.data.datasets[1].data = trendArr;
+    compChart.data.datasets[2].data = seasArr;
+    compChart.update('none');
+  }
+}
+
+function loadDifficulty(diff) {
+  currentDiff = diff;
+  currentScIdx = 0;
+  ['easy','medium','hard'].forEach(d => {
+    const btn = document.getElementById(`btn-${d}`);
+    btn.classList.toggle('active', d === diff);
+    btn.setAttribute('aria-pressed', d === diff ? 'true' : 'false');
+  });
+  loadScenario(diff, 0);
+}
+
+function newScenario() {
+  currentScIdx++;
+  loadScenario(currentDiff, currentScIdx);
+}
+
+function toggleInstructions(btn) {
+  const body = document.getElementById('instrBody');
+  const icon = btn.querySelector('.instr-toggle-icon');
+  const open = body.classList.toggle('show');
+  icon.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', String(open));
 }
 
 function initCharts() {
-  mainChart = new Chart(document.getElementById('mainChart'), {
+  const ctx1 = document.getElementById('mainChart').getContext('2d');
+  mainChart = new Chart(ctx1, {
     type: 'line',
     data: {
       labels: weeks,
       datasets: [
-        { label: 'Target', data: target, borderColor: '#378ADD', borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#378ADD', tension: 0.3, fill: false },
-        { label: 'Yours', data: Array(N).fill(200), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, borderDash: [4, 3] }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-      scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 } } }, x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 12 }, grid: { display: false } } },
-      animation: { duration: 0 }
-    }
-  });
-
-  const { levelArr, trendArr, seasArr } = buildComponents(200, 0, 0);
-  compChart = new Chart(document.getElementById('compChart'), {
-    type: 'line',
-    data: {
-      labels: weeks,
-      datasets: [
-        { label: 'Level', data: levelArr, borderColor: '#1D9E75', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
-        { label: 'Trend', data: trendArr, borderColor: '#BA7517', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
-        { label: 'Seasonal', data: seasArr, borderColor: '#7F77DD', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+        { label: 'Target signal', data: target, borderColor: '#2563a8', borderWidth: 2.5, pointRadius: 2.5, pointBackgroundColor: '#2563a8', tension: 0.3, fill: false },
+        { label: 'Your reconstruction', data: Array(N).fill(200), borderColor: '#c0501a', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, borderDash: [5,4] }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 10, padding: 8, color: '#888' } },
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.raw)}` }
+        }
+      },
+      scales: {
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#888', font: { size: 11 } } },
+        x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 12 }, grid: { display: false } }
+      },
+      animation: { duration: 0 }
+    }
+  });
+
+  const {levelArr, trendArr, seasArr} = buildComponents(200, 0, 0);
+  const ctx2 = document.getElementById('compChart').getContext('2d');
+  compChart = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [
+        { label: 'Level', data: levelArr, borderColor: '#1a7a4a', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0 },
+        { label: 'Trend effect', data: trendArr, borderColor: '#b07a10', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0 },
+        { label: 'Seasonal', data: seasArr, borderColor: '#5244b0', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 10, padding: 8, color: '#666' } },
         tooltip: { mode: 'index', intersect: false }
       },
-      scales: { y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 10 } } }, x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } } },
+      scales: {
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#888', font: { size: 10 } } },
+        x: { ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } }
+      },
       animation: { duration: 0 }
     }
   });
 }
 
-generateTarget(SCENARIOS[currentScenario]);
-document.addEventListener('DOMContentLoaded', initCharts);
-setTimeout(initCharts, 50);
+// ── Safe boot: generate data first, then draw charts, then load UI
+function boot() {
+  // Destroy any existing chart instances to avoid canvas reuse errors
+  if (mainChart) { mainChart.destroy(); mainChart = null; }
+  if (compChart)  { compChart.destroy();  compChart = null; }
+
+  // Pre-generate the first scenario data so target[] is ready for initCharts
+  currentDiff = 'hard';
+  currentScIdx = 0;
+  const sc = pickScenario('hard', 0);
+  generateTarget(sc);
+
+  // Build charts (canvas is guaranteed ready inside DOMContentLoaded)
+  initCharts();
+
+  // Now update UI state without re-generating data
+  const badge = document.getElementById('diffBadge');
+  badge.textContent = 'hard';
+  badge.className = 'diff-badge hard';
+  document.getElementById('scenarioName').textContent = sc.name;
+
+  ['easy','medium','hard'].forEach(d => {
+    const btn = document.getElementById(`btn-${d}`);
+    btn.classList.toggle('active', d === 'hard');
+    btn.setAttribute('aria-pressed', d === 'hard' ? 'true' : 'false');
+  });
+
+  // Reset sliders to defaults
+  document.getElementById('s-level').value = 200;
+  document.getElementById('s-trend').value = 0;
+  document.getElementById('s-seas').value  = 0;
+  document.getElementById('s-noise').value = 0;
+  document.getElementById('v-level').textContent = 200;
+  document.getElementById('v-trend').textContent = '+0';
+  document.getElementById('v-seas').textContent  = 0;
+  document.getElementById('v-noise').textContent = 0;
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
 </script>
+</body>
+</html>
