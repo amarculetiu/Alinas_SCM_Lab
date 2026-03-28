@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kraljic Matrix — Sourcing Scenarios</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f1f3d;--navy2:#1a3060;--navy3:#243d75;
+  --gold:#c8922a;--gold-lt:#f5e2b8;
+  --green:#1e6b3c;--green-bg:#d6eed e;--green-lt:#eaf5ee;--green-bd:#2d9455;
+  --purple:#3d2d8a;--purple-bg:#ebe8fb;--purple-lt:#f0eefe;--purple-bd:#5b4ec4;
+  --amber:#7a4800;--amber-bg:#fdefd4;--amber-lt:#fef7eb;--amber-bd:#c47a10;
+  --gray:#3a3834;--gray-bg:#eceae4;--gray-lt:#f4f3ef;--gray-bd:#888076;
+  --bg:#f7f6f2;--card:#ffffff;--border:#dddbd3;--text:#0f0f0e;--muted:#5a5955;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+  --radius:10px;
+}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;line-height:1.5;}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy);color:#fff;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.hdr-left h1{font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:.01em;color:#fff;}
+.hdr-left p{font-size:13px;color:#90a8cc;margin-top:2px;}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.score-txt{font-size:13px;color:#90a8cc;font-family:var(--font-body);}
+.score-txt strong{color:#fff;font-weight:600;}
+.prog-bg{width:220px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;}
+.prog-fill{height:6px;border-radius:3px;background:var(--gold);transition:width .4s ease;}
+.answered-txt{font-size:12px;color:#90a8cc;}
+
+/* ── READ-ME BANNER ── */
+.readme-banner{background:#1a3060;border-bottom:1px solid #2a4a80;}
+.readme-toggle{width:100%;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:none;border:none;color:#fff;font-family:var(--font-body);font-size:14px;font-weight:500;text-align:left;}
+.readme-toggle:hover{background:rgba(255,255,255,.05);}
+.readme-toggle-left{display:flex;align-items:center;gap:10px;}
+.readme-badge{background:var(--gold);color:#3a2000;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em;}
+.readme-chevron{font-size:16px;color:#90a8cc;transition:transform .25s;}
+.readme-chevron.open{transform:rotate(180deg);}
+.readme-body{overflow:hidden;max-height:0;transition:max-height .35s ease;}
+.readme-body.open{max-height:600px;}
+.readme-content{padding:20px 32px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.readme-block h3{font-size:13px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+.readme-block p{font-size:13px;color:#b8cce0;line-height:1.6;}
+.readme-block ul{font-size:13px;color:#b8cce0;line-height:1.7;padding-left:18px;}
+.readme-divider{grid-column:1/-1;border:none;border-top:1px solid #2a4a80;}
+.readme-purpose{grid-column:1/-1;background:rgba(200,146,42,.08);border:1px solid rgba(200,146,42,.25);border-radius:8px;padding:12px 16px;font-size:13px;color:#d4b07a;line-height:1.6;}
+
+/* ── COMPANY TABS ── */
+.co-tabs{display:flex;background:#fff;border-bottom:2px solid var(--border);overflow-x:auto;padding:0 24px;}
+.ctab{padding:12px 18px;font-size:14px;font-family:var(--font-body);font-weight:500;cursor:pointer;border-bottom:3px solid transparent;color:var(--muted);white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:7px;margin-bottom:-2px;border-top:none;border-left:none;border-right:none;background:none;}
+.ctab:hover{color:var(--text);}
+.ctab.active{border-bottom-color:var(--navy);color:var(--navy);font-weight:600;}
+.ctab-emoji{font-size:16px;}
+.ctab-done-icon{font-size:12px;color:#1e6b3c;font-weight:700;}
+
+/* ── QUADRANT TRACKER (read-only) ── */
+.quad-tracker{display:flex;gap:8px;padding:10px 24px;background:#faf9f6;border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;}
+.qt-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-right:4px;}
+.qt-item{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1.5px solid;font-size:13px;font-family:var(--font-body);font-weight:500;cursor:default;user-select:none;}
+.qt-item.strategic {border-color:var(--purple-bd);color:var(--purple);background:var(--purple-lt);}
+.qt-item.leverage  {border-color:var(--green-bd); color:var(--green); background:var(--green-lt);}
+.qt-item.bottleneck{border-color:var(--amber-bd); color:var(--amber); background:var(--amber-lt);}
+.qt-item.noncrit   {border-color:var(--gray-bd);  color:var(--gray);  background:var(--gray-lt);}
+.qt-check{font-size:14px;font-weight:700;}
+.qt-check.correct{color:#1e6b3c;}
+.qt-check.wrong{color:#b03030;}
+.qt-check.skipped{color:#888;}
+.qt-check.pending{color:#ccc;}
+
+/* ── MAIN ── */
+.main{display:flex;min-height:calc(100vh - 220px);}
+
+/* ── SCENARIO PANEL ── */
+.spanel{flex:1;min-width:0;background:var(--card);border-right:1px solid var(--border);padding:26px 26px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;max-height:calc(100vh - 220px);}
+.co-tag{display:inline-flex;align-items:center;gap:7px;background:#eef3fb;border:1px solid #c0d0ee;border-radius:20px;padding:4px 13px 4px 9px;font-size:12px;font-weight:600;color:#1a3060;}
+.s-num{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+.s-title{font-family:var(--font-display);font-size:20px;font-weight:400;line-height:1.3;color:var(--text);}
+.s-divider{border:none;border-top:1px solid var(--border);}
+.clue-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.clue-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;}
+.clue-icon{font-size:17px;flex-shrink:0;margin-top:1px;}
+.clue-text{font-size:14px;line-height:1.6;color:var(--text);}
+.clue-text strong{font-weight:600;}
+.task-box{background:#fdf8ec;border:1px solid #e8c96a;border-left:4px solid var(--gold);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4a3500;}
+.task-box strong{font-weight:600;}
+.context-text{font-size:13px;line-height:1.65;color:#3a3835;}
+
+/* ── MATRIX PANEL ── */
+.mpanel{width:300px;flex-shrink:0;padding:20px 16px 20px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;overflow-y:auto;max-height:calc(100vh - 220px);}
+.mpanel-hint{font-size:12px;font-weight:500;color:var(--muted);align-self:flex-start;line-height:1.4;}
+
+/* outer row: Y-axis label + grid */
+.matrix-row{display:flex;align-items:stretch;width:100%;gap:0;}
+.axis-y-col{display:flex;flex-direction:column;align-items:center;justify-content:center;width:34px;flex-shrink:0;gap:4px;}
+.axis-y-lbl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--navy);white-space:nowrap;line-height:1;}
+.ax-hi-y{font-size:9px;font-weight:600;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);}
+.ax-lo-y{font-size:9px;font-weight:600;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);}
+
+/* inner column: grid + X-axis row */
+.matrix-col{display:flex;flex-direction:column;flex:1;gap:0;}
+.mwrap{position:relative;width:100%;aspect-ratio:1/1;user-select:none;}
+
+/* X axis row */
+.axis-x-row{display:flex;align-items:center;justify-content:space-between;padding:5px 2px 0;width:100%;}
+.axis-x-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--navy);text-align:center;flex:1;}
+.ax-lo-x{font-size:9px;font-weight:600;color:var(--muted);}
+.ax-hi-x{font-size:9px;font-weight:600;color:var(--muted);}
+
+.mgrid{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border:2px solid #9a9890;border-radius:6px;overflow:hidden;cursor:crosshair;position:relative;}
+.quadrant{border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;position:relative;transition:filter .12s;}
+.quadrant:hover{filter:brightness(.96);}
+.q-leverage  {background:#c8e6d0;}
+.q-strategic {background:#d4cff5;}
+.q-noncrit   {background:#dddbd3;}
+.q-bottleneck{background:#fad9a0;}
+.q-lbl{font-size:12px;font-family:var(--font-body);font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;line-height:1.2;pointer-events:none;padding:0 4px;}
+.q-leverage   .q-lbl{color:#0f3d20;}
+.q-strategic  .q-lbl{color:#1e1060;}
+.q-noncrit    .q-lbl{color:#2a2820;}
+.q-bottleneck .q-lbl{color:#4a2800;}
+.q-sublbl{font-size:9px;font-family:var(--font-body);font-weight:500;text-align:center;pointer-events:none;opacity:.75;padding:0 4px;line-height:1.3;}
+.q-leverage   .q-sublbl{color:#1a5c30;}
+.q-strategic  .q-sublbl{color:#2d1e80;}
+.q-noncrit    .q-sublbl{color:#3a3835;}
+.q-bottleneck .q-sublbl{color:#5a3200;}
+
+/* Pin */
+#pin{position:absolute;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translate(-50%,-50%);transform-origin:top left;cursor:grab;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none;transition:box-shadow .15s;}
+#pin.active{display:block;}
+#pin:active{cursor:grabbing;box-shadow:0 4px 14px rgba(0,0,0,.35);}
+#pin-inner{width:8px;height:8px;background:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);}
+#correct-marker{position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid #fff;z-index:9;pointer-events:none;box-shadow:0 0 0 2px rgba(0,0,0,.25);display:none;}
+#correct-marker::after{content:'★';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;color:#fff;}
+
+.fb{width:100%;border-radius:8px;padding:10px 13px;font-size:13px;line-height:1.55;display:none;border-left:4px solid;}
+.fb.correct  {background:#eaf5ee;border-color:#1e6b3c;color:#0d3d20;}
+.fb.incorrect{background:#fdecea;border-color:#c03030;color:#5a0f0f;}
+.fb.partial  {background:#fff8e6;border-color:#c47a10;color:#4a2c00;}
+.fb-title{font-weight:700;font-size:13px;margin-bottom:3px;}
+
+.hint-txt{font-size:11px;color:var(--muted);text-align:center;width:100%;}
+
+/* Buttons */
+.btn-row{display:flex;gap:8px;width:100%;}
+.btn{flex:1;padding:10px 10px;border-radius:8px;font-size:13px;font-family:var(--font-body);font-weight:600;border:none;cursor:pointer;transition:opacity .15s,transform .1s;}
+.btn:active{transform:scale(.98);}
+.btn-p{background:var(--navy);color:#fff;}
+.btn-p:hover{background:var(--navy2);}
+.btn-p:disabled{background:#aaa;cursor:not-allowed;}
+.btn-s{background:var(--card);color:var(--text);border:1.5px solid var(--border);}
+.btn-s:hover{background:var(--bg);}
+
+/* ── COMPANY COMPLETE BADGE ── */
+.co-complete{width:100%;background:linear-gradient(135deg,#0f1f3d,#1a3060);border-radius:12px;padding:18px 20px;text-align:center;display:none;border:1px solid #2a4a80;}
+.co-complete-emoji{font-size:32px;margin-bottom:6px;}
+.co-complete h2{font-family:var(--font-display);font-size:18px;color:#fff;margin-bottom:5px;}
+.co-complete p{font-size:12px;color:#90a8cc;line-height:1.5;margin-bottom:12px;}
+.co-complete-scores{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+.co-sc-item{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:6px 10px;font-size:11px;color:#d4e4f8;display:flex;align-items:center;gap:5px;}
+.co-sc-item.correct-item{border-color:rgba(46,148,85,.4);background:rgba(46,148,85,.12);}
+.co-sc-item.wrong-item{border-color:rgba(192,48,48,.4);background:rgba(192,48,48,.12);}
+
+/* ── RESULTS ── */
+#results-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 120px);padding:40px;gap:20px;}
+.res-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:40px;max-width:660px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,.08);}
+.res-emoji{font-size:52px;text-align:center;margin-bottom:12px;}
+.res-title{font-family:var(--font-display);font-size:28px;text-align:center;margin-bottom:6px;}
+.res-score{font-size:16px;color:var(--muted);text-align:center;margin-bottom:24px;}
+.res-section{margin-bottom:18px;}
+.res-section h3{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.rb-item{display:flex;align-items:center;gap:9px;font-size:14px;padding:5px 0;}
+.rb-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.rb-c{background:#1e6b3c;}.rb-w{background:#c03030;}
+
+@media(max-width:800px){
+  .main{flex-direction:column;}
+  .spanel{min-width:0;max-height:none;border-right:none;border-bottom:1px solid var(--border);}
+  .mpanel{width:100%;max-height:none;padding:20px;}
+  .readme-content{grid-template-columns:1fr;}
+  .hdr{padding:16px 20px;}
+  .axis-y-col{width:30px;}
+  .axis-y-lbl{font-size:9px;}
+  .q-lbl{font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>Kraljic Matrix — Sourcing Scenarios</h1>
+    <p>Place each ingredient on the matrix. Five companies · Four quadrants each · Twenty scenarios.</p>
+  </div>
+  <div class="hdr-right">
+    <div class="score-txt">Score: <strong id="score-display">0</strong> / <strong id="total-display">40</strong> pts</div>
+    <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="answered-txt" id="answered-txt">0 of 20 answered</div>
+  </div>
+</div>
+
+<!-- READ-ME BANNER -->
+<div class="readme-banner">
+  <button class="readme-toggle" onclick="toggleReadme()" aria-expanded="false" id="readme-btn">
+    <div class="readme-toggle-left">
+      <span class="readme-badge">📖 Read First</span>
+      <span>How to use this activity — click to expand</span>
+    </div>
+    <span class="readme-chevron" id="readme-chevron">▼</span>
+  </button>
+  <div class="readme-body" id="readme-body">
+    <div class="readme-content">
+      <div class="readme-purpose">
+        <strong>Purpose:</strong> This activity trains you to apply the Kraljic Purchasing Portfolio Matrix — a foundational tool in supply chain management. You will analyse real-world sourcing scenarios for five global companies and decide where each ingredient or material sits based on two dimensions: <em>how much it impacts the company's profit</em>, and <em>how risky the supply side is</em>.
+      </div>
+      <hr class="readme-divider">
+      <div class="readme-block">
+        <h3>🏢 The Companies</h3>
+        <p>You will work through five companies: Nestlé, Tesla, McDonald's, Starbucks, and TSMC. Each company has four sourcing scenarios — one for each quadrant of the matrix. Navigate companies using the tabs below.</p>
+      </div>
+      <div class="readme-block">
+        <h3>📋 The Quadrants</h3>
+        <ul>
+          <li><strong>Strategic:</strong> High profit impact + High supply risk → Build deep partnerships</li>
+          <li><strong>Leverage:</strong> High profit impact + Low supply risk → Exploit buying power</li>
+          <li><strong>Bottleneck:</strong> Low profit impact + High supply risk → Secure supply continuity</li>
+          <li><strong>Non-Critical:</strong> Low profit impact + Low supply risk → Streamline &amp; automate</li>
+        </ul>
+      </div>
+      <div class="readme-block">
+        <h3>⚠️ What is "Supply Risk"?</h3>
+        <ul>
+          <li><strong>Geographic concentration</strong> — few countries or regions produce it</li>
+          <li><strong>Market structure</strong> — few suppliers or intermediaries control trade</li>
+          <li><strong>Substitutability</strong> — how hard is it to switch suppliers or find alternatives?</li>
+          <li><strong>Lead times</strong> — how long does qualifying a new supplier take?</li>
+          <li><strong>External shocks</strong> — political risk, climate, regulation, conflict</li>
+        </ul>
+      </div>
+      <div class="readme-block">
+        <h3>🎯 How to Play</h3>
+        <ul>
+          <li>Read the company context and the three clues carefully</li>
+          <li>Click anywhere on the matrix to place your pin</li>
+          <li>Press <strong>Submit Answer</strong> to check your placement</li>
+          <li>A ✓ appears when you place correctly — try to earn all 20!</li>
+          <li>Some scenarios involve real current events that shift an ingredient's position — read the clues carefully</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANY TABS -->
+<div class="co-tabs" id="co-tabs"></div>
+
+<!-- QUADRANT TRACKER -->
+<div class="quad-tracker" id="quad-tracker">
+  <span class="qt-label">Progress:</span>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main-view">
+  <div class="spanel" id="spanel"></div>
+  <div class="mpanel">
+    <p class="mpanel-hint" id="mpanel-hint">Click the matrix to drop your pin, then press Submit Answer.</p>
+    <div class="matrix-row">
+      <!-- Y axis column -->
+      <div class="axis-y-col">
+        <span class="ax-hi-y">High</span>
+        <span class="axis-y-lbl">Profit Impact</span>
+        <span class="ax-lo-y">Low</span>
+      </div>
+      <!-- Grid + X axis -->
+      <div class="matrix-col">
+        <div class="mwrap" id="mwrap">
+          <div class="mgrid" id="mgrid">
+            <div class="quadrant q-leverage"  ><div class="q-lbl">Leverage</div><div class="q-sublbl">High profit · Low risk</div></div>
+            <div class="quadrant q-strategic" ><div class="q-lbl">Strategic</div><div class="q-sublbl">High profit · High risk</div></div>
+            <div class="quadrant q-noncrit"   ><div class="q-lbl">Non-Critical</div><div class="q-sublbl">Low profit · Low risk</div></div>
+            <div class="quadrant q-bottleneck"><div class="q-lbl">Bottleneck</div><div class="q-sublbl">Low profit · High risk</div></div>
+            <div id="pin"><div id="pin-inner"></div></div>
+            <div id="correct-marker"></div>
+          </div>
+        </div>
+        <div class="axis-x-row">
+          <span class="ax-lo-x">Low</span>
+          <span class="axis-x-lbl">Supply Risk</span>
+          <span class="ax-hi-x">High</span>
+        </div>
+      </div>
+    </div>
+    <div class="co-complete" id="co-complete">
+      <div class="co-complete-emoji" id="coc-emoji"></div>
+      <h2 id="coc-title"></h2>
+      <p id="coc-body"></p>
+      <div class="co-complete-scores" id="coc-scores"></div>
+      <button class="btn btn-p" onclick="goNextCompany()">Try Another Company →</button>
+    </div>
+    <div class="fb" id="fb"><div class="fb-title" id="fb-title"></div><div id="fb-body"></div></div>
+    <p class="hint-txt" id="hint-txt"></p>
+    <div class="btn-row" id="btn-row">
+      <button class="btn btn-s" id="btn-skip" onclick="skipCurrent()">Skip</button>
+      <button class="btn btn-p" id="btn-submit" onclick="submitAnswer()" disabled>Submit Answer</button>
+      <button class="btn btn-p" id="btn-next" style="display:none" onclick="nextScenario()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen">
+  <div class="res-card">
+    <div class="res-emoji" id="res-emoji"></div>
+    <div class="res-title" id="res-title"></div>
+    <div class="res-score" id="res-score"></div>
+    <div id="res-breakdown"></div>
+    <br>
+    <button class="btn btn-p" onclick="restart()">Try Again</button>
+  </div>
+</div>
+
+<script>
+const QKEYS = ['strategic','leverage','bottleneck','noncrit'];
+const QNAMES = {strategic:'Strategic',leverage:'Leverage',bottleneck:'Bottleneck',noncrit:'Non-Critical'};
+const QC = {leverage:'#1e6b3c',strategic:'#3d2d8a',noncrit:'#5a5753',bottleneck:'#7a4800'};
+
+const COMPANIES = [
+{
+  id:'nestle',icon:'🍫',name:'Nestlé',industry:'Food & Beverage',
+  context:'Nestlé is the world\'s largest food and beverage company (~$93B revenue, 2023), producing over 2,000 brands including KitKat, Nescafé, Maggi, Perrier, and Purina. It publicly reports on 14 key raw material categories that together represent 95% of its annual supply volume and spend.',
+  scenarios:{
+    strategic:{
+      ingredient:'Cocoa Beans',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Nestlé sources approximately <strong>337,000 tonnes of cocoa annually</strong> — one of its top three raw material expenditures. Cocoa is the irreplaceable core of its entire chocolate and confectionery portfolio: KitKat, Smarties, Aero, Crunch, and dozens more.'},
+        {icon:'🌍',label:'Supply Geography & Market Structure',text:'As of 2024, <strong>over 67% of Nestlé\'s cocoa originates from Côte d\'Ivoire alone</strong>. Two West African nations supply more than 70% of global cocoa output. Crucially, Nestlé does not buy directly from smallholder farmers — it purchases through a small number of large <strong>cocoa traders and processors</strong> (Barry Callebaut, Olam, Cargill, Sucden) who consolidate supply. This concentrates negotiating power in a handful of intermediaries. A 2024 EU Deforestation Regulation threatens import bans on non-certified cocoa, and El Niño-driven droughts pushed cocoa futures above $10,000/tonne in early 2024 — an all-time record. Switching to a new consolidator takes years of audit and certification work.'},
+        {icon:'🔄',label:'Substitutability',text:'There is <strong>no commercially viable substitute for cocoa</strong> in chocolate. Reformulating KitKat would be brand suicide. Nestlé\'s decade-long "Cocoa Plan" — embedding agronomists directly in farming communities — reflects a strategic sourcing response to an irreplaceable, high-risk supply.'},
+      ],
+      correctQ:'strategic',ax:.77,ay:.17,
+      feedback:'Cocoa beans are a <strong>Strategic Item</strong>. They are the foundation of Nestlé\'s most iconic and profitable product lines (very high profit impact), and the supply base is dangerously concentrated in two West African countries subject to climate shocks, regulatory upheaval, and record price volatility (very high supply risk). Nestlé\'s response — deep farmer partnerships, direct investment, proprietary certification — is textbook Kraljic strategic sourcing.'
+    },
+    leverage:{
+      ingredient:'Refined Sugar',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Nestlé buys approximately <strong>1.65 million tonnes of sugar per year</strong> — its single largest raw material by volume, used in everything from Milo to confectionery to dairy products. Total annual sugar spend runs into the hundreds of millions of dollars, making it a major cost lever.'},
+        {icon:'🌍',label:'Supply Geography',text:'Sugar is grown and processed across <strong>more than 100 countries</strong>, traded on the ICE and LIFFE commodity exchanges. Major producers include Brazil, India, Thailand, the EU, and Australia. Nestlé has pre-qualified dozens of mills globally; alternative sources are always available. Prices fluctuate but structural scarcity is essentially unknown in modern markets.'},
+        {icon:'🔄',label:'Substitutability',text:'Nestlé\'s enormous purchasing volumes — among the largest of any single buyer globally — give it <strong>significant leverage to negotiate pricing, payment terms, and sustainability standards</strong> (Bonsucro certification). Switching between approved mills typically takes weeks, not months, and requires no reformulation.'},
+      ],
+      correctQ:'leverage',ax:.22,ay:.22,
+      feedback:'Sugar is a <strong>Leverage Item</strong>. The total spend is enormous and it touches hundreds of products (high profit impact), but the supply market is a liquid, globally distributed commodity with hundreds of competitive producers (low supply risk). Nestlé\'s playbook: use scale aggressively, drive competitive pricing, mandate Bonsucro certification, and consolidate suppliers for efficiency.'
+    },
+    bottleneck:{
+      ingredient:'Natural Vanilla Extract',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Natural vanilla is used in many Nestlé products — ice cream, baked goods, confectionery flavourings. It is, however, used in <strong>very small quantities by weight</strong> and its cost represents a tiny fraction of any product\'s bill of materials. It does not drive Nestlé\'s margins in any meaningful way.'},
+        {icon:'🌍',label:'Supply Geography',text:'<strong>Over 80% of the world\'s natural vanilla comes from Madagascar</strong>, a country repeatedly devastated by cyclones. Cyclone Gafilo (2004) and Cyclone Enawo (2017) each destroyed a third of the national crop overnight, sending prices from ~$20/kg to over $600/kg. In 2023–24, erratic rainfall and a smaller harvest have again pushed prices sharply upward. Only a handful of export intermediaries control the trade.'},
+        {icon:'🔄',label:'Substitutability',text:'Synthetic vanillin exists but is chemically distinct in premium product applications. Nestlé\'s branding on several products specifies "natural flavour," meaning <strong>it cannot silently substitute synthetic alternatives</strong> without regulatory disclosure and potential consumer backlash. Qualifying alternative origins (Papua New Guinea, Uganda) takes years of agronomic development.'},
+      ],
+      correctQ:'bottleneck',ax:.80,ay:.74,
+      feedback:'Natural vanilla is a <strong>Bottleneck Item</strong>. Its direct cost contribution is small (low profit impact) but supply risk is extreme: near-monopoly geography in Madagascar, catastrophic weather exposure, multi-year qualification timelines for alternatives, and price spikes of 30× in a single season. Nestlé\'s response: hold strategic inventory buffers and invest in supplier diversification to Uganda and Papua New Guinea.'
+    },
+    noncrit:{
+      ingredient:'Corrugated Cardboard Packaging',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Nestlé is one of Europe\'s largest buyers of corrugated cardboard, consuming over <strong>1.25 million tonnes of paper-based packaging annually</strong>. Despite the sheer volume, packaging is a cost centre — it protects and ships products but does not make them taste better, command higher prices, or build brand equity in the way ingredients do.'},
+        {icon:'🌍',label:'Supply Geography',text:'The corrugated cardboard market is served by <strong>dozens of major producers globally</strong>: Smurfit Kappa, International Paper, DS Smith, Mondi, and many regional mills. Nestlé maintains a pre-approved supplier list with regional redundancy on every continent. Switching between certified mills is routine procurement practice.'},
+        {icon:'🔄',label:'Substitutability',text:'Packaging grades are largely standardised by ISO specifications. There is <strong>no unique supplier capability or proprietary specification</strong> that locks Nestlé into any single source. Contracts are tendered annually against published benchmarks. Lead time to switch an approved supplier: days to weeks.'},
+      ],
+      correctQ:'noncrit',ax:.19,ay:.80,
+      feedback:'Corrugated cardboard is a <strong>Non-Critical Item</strong>. The volumes are large but unit value is minimal, the supply market is competitive and globally redundant, and switching is frictionless. Nestlé\'s procurement strategy: standardise specifications, automate ordering via e-catalogues, and consolidate to a small set of global partners for efficiency and sustainability compliance.'
+    }
+  }
+},
+{
+  id:'tesla',icon:'⚡',name:'Tesla',industry:'Electric Vehicles',
+  context:'Tesla produced approximately 1.85 million vehicles in 2023 and operates Gigafactories in the US, Germany, China, and Texas. The battery pack remains the single most expensive component per vehicle (20–40% of manufacturing cost). Tesla also produces its own battery cells (4680 format) and is progressively vertically integrating its supply chain.',
+  scenarios:{
+    strategic:{
+      ingredient:'Lithium (Battery Grade)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Lithium is the electrochemical foundation of every Tesla battery cell. With nearly 2 million vehicles per year plus Megapack energy storage, Tesla\'s lithium demand runs to <strong>tens of thousands of tonnes of lithium carbonate equivalent annually</strong>. Battery cost determines vehicle margin, pricing competitiveness, and ultimately Tesla\'s core business viability.'},
+        {icon:'🌍',label:'Supply Geography',text:'The "<strong>Lithium Triangle</strong>" (Chile, Argentina, Bolivia) holds ~60% of global reserves. Refined battery-grade lithium is processed by a small number of facilities globally — primarily in China. In 2023, Chile announced plans to nationalise its lithium industry, causing immediate concern for buyers. Lead times to develop new mines run 7–15 years. Prices collapsed in late 2023 after a glut, but structural long-term scarcity risk remains very high.'},
+        {icon:'🔄',label:'Substitutability',text:'No current commercialised battery chemistry can replace lithium at EV performance scale. Sodium-ion is emerging but remains years from viability for long-range vehicles. Tesla has responded by <strong>signing direct mining contracts</strong> (Ganfeng, Piedmont, Liontown), opening its own Texas lithium refinery in 2023, and redesigning its 4680 cell to use less lithium per kWh.'},
+      ],
+      correctQ:'strategic',ax:.76,ay:.16,
+      feedback:'Lithium is a <strong>Strategic Item</strong> for Tesla — it is the enabling input for the core product (maximum profit impact) facing structurally constrained, geographically concentrated supply with decade-long lead times to expand (very high supply risk). Tesla\'s response: vertical integration into refining, long-term direct mining contracts, and active cell chemistry R&D to reduce lithium intensity.'
+    },
+    leverage:{
+      ingredient:'Aluminium (Castings & Body)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Tesla uses aluminium extensively — for Gigacastings (some of the largest die-cast parts ever produced), body panels, battery enclosures, and structural frames. Aluminium represents approximately <strong>18% of Tesla\'s manufacturing carbon footprint</strong> and hundreds of millions in annual spend. Its cost directly affects vehicle production economics.'},
+        {icon:'🌍',label:'Supply Geography',text:'Aluminium is the <strong>world\'s most widely produced metal after steel</strong>, with over 65 million tonnes smelted annually. Producers span North America (Alcoa, Kaiser), Europe (Norsk Hydro, Rusal), the Middle East (ALBA), and Asia. Tesla sources regionally close to each Gigafactory, maintaining multiple qualified suppliers per region with standard contract terms.'},
+        {icon:'🔄',label:'Substitutability',text:'While Tesla specifies particular alloy grades for Gigacasting performance, multiple mills globally can meet these specifications. Tesla\'s enormous and growing volumes give it <strong>strong negotiating leverage</strong> on price, recycled content targets (secondary aluminium), and delivery SLAs. Switching between approved suppliers has lead times of weeks.'},
+      ],
+      correctQ:'leverage',ax:.23,ay:.23,
+      feedback:'Aluminium is a <strong>Leverage Item</strong>. It is a significant cost driver tied to core production (high profit impact) but sourced from a highly competitive, globally distributed commodity market with multiple qualified suppliers per region (low supply risk). Tesla uses scale aggressively: competitive tenders, recycled-content mandates, and regional sourcing strategies near each Gigafactory.'
+    },
+    bottleneck:{
+      ingredient:'High-Bandwidth Memory (HBM) Chips',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Tesla\'s AI training supercomputers (Dojo) and its in-vehicle FSD (Full Self-Driving) neural network inference hardware require High-Bandwidth Memory chips. HBM is a <strong>relatively small line item</strong> in the overall vehicle bill of materials — the average car does not contain large quantities of HBM — but it is critical to Tesla\'s AI and autonomy roadmap.'},
+        {icon:'🌍',label:'Supply Geography',text:'As of 2024, <strong>SK Hynix alone holds approximately 50% of global HBM supply</strong>, with Samsung and Micron as the only other qualified producers. SK Hynix\'s HBM3e is fully allocated to NVIDIA and a handful of hyperscalers through 2025. US export controls introduced in October 2023 have further complicated the supply landscape for AI chip components. Lead times for new HBM production capacity: 18–24 months minimum.'},
+        {icon:'🔄',label:'Substitutability',text:'There is <strong>no drop-in alternative to HBM</strong> for Tesla\'s Dojo training architecture. Standard GDDR memory cannot meet the bandwidth requirements for large-scale AI model training. Redesigning hardware around a different memory standard would take 12–18 months of engineering and re-qualification — during which Tesla\'s in-house AI training capacity would be constrained.'},
+      ],
+      correctQ:'bottleneck',ax:.81,ay:.73,
+      feedback:'HBM chips are a <strong>Bottleneck Item</strong> for Tesla. The direct cost per vehicle is low (low-to-moderate profit impact on the car itself) but supply is extremely concentrated (one dominant supplier in a fully allocated market), governed by geopolitical export controls, and has no short-term substitute. A HBM shortage would constrain Tesla\'s AI training capacity and delay FSD development — a critical strategic risk even if it doesn\'t show up as a large spend line.'
+    },
+    noncrit:{
+      ingredient:'Structural Steel (Frame Reinforcement)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Tesla uses high-strength boron steel for safety-critical structural zones: B-pillars, crumple zones, door intrusion beams. Steel represents approximately <strong>8% of Tesla\'s manufacturing carbon footprint</strong> and a real but modest cost line. It is not a source of competitive advantage — it is a commodity structural input.'},
+        {icon:'🌍',label:'Supply Geography',text:'Steel is the <strong>most produced material on Earth</strong> (1.9 billion tonnes/year). Major producers — ArcelorMittal, POSCO, Nippon Steel, Nucor — operate in every major market. Tesla sources from mills near each Gigafactory as a standard logistics efficiency. Global overcapacity has kept steel prices relatively soft since 2022.'},
+        {icon:'🔄',label:'Substitutability',text:'Tesla\'s boron steel grades require mill certification, but <strong>multiple certified producers exist</strong> in the US, Europe, and East Asia. Switching lead times are measured in weeks. Tesla\'s increasing use of Gigacastings is progressively replacing stamped steel parts, further reducing steel\'s share of vehicle content over time.'},
+      ],
+      correctQ:'noncrit',ax:.19,ay:.80,
+      feedback:'Structural steel is a <strong>Non-Critical Item</strong> for Tesla. It is a mature commodity with global overcapacity, multiple qualified suppliers in every region, and low switching friction. Its strategic importance is also declining as Tesla\'s Gigacasting programme replaces stamped steel assemblies. Tesla\'s approach: local sourcing near each Gigafactory, standard approved supplier lists, annual price benchmarking.'
+    }
+  }
+},
+{
+  id:'mcdonalds',icon:'🍔',name:"McDonald's",industry:'Quick Service Restaurants',
+  context:"McDonald's serves approximately 69 million customers daily across 40,000+ restaurants in over 100 countries. It is one of the world's largest buyers of beef, chicken, potatoes, and cooking oil. Its 2023 Annual Report identifies beef, soy (for animal feed), palm oil, fish, coffee, and fibre packaging as its six priority sourcing categories.",
+  scenarios:{
+    strategic:{
+      ingredient:'Beef Patties',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:"McDonald's is consistently one of the <strong>world's top five beef buyers</strong>, sourcing hundreds of millions of pounds annually. The beef patty is the core of its most profitable and iconic products: the Big Mac, Quarter Pounder, and McDouble. Beef quality and food safety directly determine customer trust and the brand's entire premium positioning."},
+        {icon:'🌍',label:'Supply Geography',text:'In the US, <strong>four meatpackers control approximately 85% of beef processing</strong> (JBS, Tyson, Cargill, National Beef). In Brazil — a critical sourcing country — deforestation-linked supply chains triggered a 2023 NGO campaign directly targeting McDonald\'s. A 2021 E.coli outbreak linked to a supplier cost McDonald\'s $12M in settlements and caused temporary supply disruptions across multiple markets.'},
+        {icon:'🔄',label:'Substitutability',text:"There is <strong>no substitute for beef in McDonald's hamburger products</strong> without fundamental brand repositioning. Plant-based alternatives (McPlant) have not replaced beef at scale. McDonald's has embedded itself in the beef supply chain through its Global Beef Sustainability Strategy, working directly with ranchers through the Global Roundtable for Sustainable Beef."},
+      ],
+      correctQ:'strategic',ax:.74,ay:.17,
+      feedback:"Beef patties are a <strong>Strategic Item</strong> for McDonald's. They are the brand's foundational product (maximum profit impact) and sourced from a market with significant concentration, food safety risk, deforestation regulatory exposure, and climate change vulnerability affecting cattle farming (high supply risk). McDonald's response: deep supplier integration, long-term contracts, and active participation in global sustainable beef standards."
+    },
+    leverage:{
+      ingredient:'Chicken (McNuggets & Filets)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:"McDonald's sells hundreds of millions of McNuggets daily across 100+ countries — chicken is one of its fastest-growing revenue categories and central to its menu diversification strategy. Chicken underpins McCrispy, McChicken, McNuggets, and wraps. It is a <strong>major and growing cost line</strong>, but critically, its contribution to menu margins is strong."},
+        {icon:'🌍',label:'Supply Geography',text:'Poultry processing is served by <strong>many large processors globally</strong>: Keystone Foods, Tyson, OSI Group in the US; Cargill, JBS in Brazil; major processors in Thailand, the EU, and China. McDonald\'s maintains a multi-source strategy in every market. While avian flu outbreaks (H5N1 spread significantly in 2022–24) can cause temporary regional disruption, McDonald\'s regional diversification limits systemic risk.'},
+        {icon:'🔄',label:'Substitutability',text:"McDonald's enormous volumes — buying millions of tonnes annually — give it <strong>significant leverage with processors</strong> on pricing, welfare standards, and antibiotic-use policies. It can shift volume between approved processors relatively quickly. Keystone Foods (formerly its primary US supplier) competes with multiple alternatives McDonald's has pre-qualified."},
+      ],
+      correctQ:'leverage',ax:.24,ay:.24,
+      feedback:"Chicken is a <strong>Leverage Item</strong>. The spend and profit impact are enormous and growing, but the supply market is competitive with multiple large processors globally (low-to-moderate supply risk). McDonald's uses its scale to enforce industry-leading welfare and antibiotic standards, drive competitive pricing, and rapidly scale volumes in growth markets like India and Southeast Asia."
+    },
+    bottleneck:{
+      ingredient:'MSC-Certified Whitefish (Filet-O-Fish)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:"The Filet-O-Fish is a permanent global menu item, but fish represents a <strong>small fraction of McDonald's total food spend</strong> — far behind beef, chicken, and potatoes. Its removal would not materially affect McDonald's profitability, and it does not drive peak-hour transaction volumes."},
+        {icon:'🌍',label:'Supply Geography',text:'McDonald\'s commitment to 100% Marine Stewardship Council (MSC)-certified fish means its supply pool is restricted to fisheries that have passed rigorous sustainability audits. <strong>Alaska Pollock dominates this pool</strong>, sourced almost entirely from the Bering Sea. In 2023, the MSC placed the Bering Sea Pollock fishery under enhanced monitoring due to declining biomass linked to ocean warming — directly threatening McDonald\'s compliant supply base.'},
+        {icon:'🔄',label:'Substitutability',text:"McDonald's sustainability commitments are publicly stated and legally reflected in supplier contracts — <strong>switching to non-certified fish is not a realistic option</strong> without brand and regulatory consequences. Qualifying a new fishery to MSC standards takes 3–5 years. Hoki (New Zealand) is the only significant alternative, but at far lower volumes and higher cost."},
+      ],
+      correctQ:'bottleneck',ax:.79,ay:.73,
+      feedback:"MSC-certified whitefish is a <strong>Bottleneck Item</strong>. Its profit impact is modest — one menu item, small overall spend — but supply risk is high and rising: constrained to a narrow pool of certified fisheries, the dominant Alaska Pollock source is under active sustainability review due to ocean warming, and qualifying alternatives takes years. McDonald's response: active engagement with the MSC, stockpile management, and accelerated development of alternative certified species."
+    },
+    noncrit:{
+      ingredient:'Paper Napkins & Straws',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:"McDonald's uses billions of paper napkins and straws annually across 40,000+ locations. Despite astronomical total quantities, the <strong>per-unit cost is essentially zero</strong> and these items contribute nothing to food quality, customer satisfaction scores, brand differentiation, or pricing power. They are pure operational overhead."},
+        {icon:'🌍',label:'Supply Geography',text:'Paper napkins and straws are manufactured by <strong>hundreds of producers globally</strong>. The market is commoditised and price-competitive. McDonald\'s 97.2% sustainably sourced fibre packaging target is met through a broad, pre-qualified pool of FSC-certified mills and converters. Regional redundancy is strong on every continent.'},
+        {icon:'🔄',label:'Substitutability',text:'Product specifications are standardised by McDonald\'s ops team and met by <strong>dozens of approved suppliers</strong>. Switching takes days. McDonald\'s active push toward reusable packaging and customer-brought containers in the EU (under the Single-Use Plastics Directive) is further reducing the long-run strategic relevance of this category.'},
+      ],
+      correctQ:'noncrit',ax:.18,ay:.81,
+      feedback:"Paper napkins and straws are classic <strong>Non-Critical Items</strong>. McDonald's buys them in staggering volumes but each unit is nearly worthless, the supply market is vast and competitive, and switching suppliers is frictionless. Procurement strategy: standardise specs, automate reordering via e-catalogues, and consolidate into framework agreements with global packaging partners."
+    }
+  }
+},
+{
+  id:'starbucks',icon:'☕',name:'Starbucks',industry:'Coffee & Beverages',
+  context:'Starbucks operates 36,000+ stores globally (2024) and purchases approximately 800 million pounds of coffee annually — roughly 5% of total world supply. Its 2023 annual spend on green coffee alone exceeds $600M. Non-coffee inputs (dairy, food, packaging, store equipment) add approximately $2.5B more. The company sources coffee through its C.A.F.E. Practices ethical sourcing program across 30+ countries.',
+  scenarios:{
+    strategic:{
+      ingredient:'Green Arabica Coffee Beans',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Starbucks purchases <strong>~800 million pounds of Arabica coffee annually</strong>, spending over $600M on green coffee. Coffee is not merely an ingredient — it is the entire brand identity, the reason for Starbucks\'s pricing power ($7 lattes), and the emotional contract with its customer base. A quality failure in coffee is an existential brand failure.'},
+        {icon:'🌍',label:'Supply Geography',text:'Premium Arabica grows only in the narrow "Coffee Belt." In 2024, <strong>Brazil suffered its worst drought in 44 years</strong>, devastating coffee yields and pushing Arabica futures to 13-year highs above $3.20/lb. Vietnam\'s robusta crop (a substitute for some beverages) also collapsed due to El Niño. Climate models project a 50% reduction in suitable Arabica growing area by 2050.'},
+        {icon:'🔄',label:'Substitutability',text:'Starbucks <strong>cannot substitute Robusta beans</strong> for its espresso-based drinks without destroying taste profile and brand positioning. Specific single-origin lots (Ethiopian Yirgacheffe, Guatemalan Antigua) cannot be sourced elsewhere. Starbucks operates 9 Global Farmer Support Centres and has deployed its own agronomists across origin countries — an enormous investment in supply security.'},
+      ],
+      correctQ:'strategic',ax:.76,ay:.15,
+      feedback:'Green Arabica coffee is <strong>THE Strategic Item</strong> for Starbucks — it is the brand (maximum profit impact) facing acute supply risk: a record 2024 Brazilian drought, El Niño impacts across origin countries, no substitutes for premium varieties, and climate projections that threaten half of all suitable growing land by 2050. Starbucks\' response is the fullest possible expression of Kraljic strategic sourcing: direct farmer investment, proprietary ethical sourcing standards, and agronomist deployment in 30+ countries.'
+    },
+    leverage:{
+      ingredient:'Fluid Milk (Dairy)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Over <strong>half of all Starbucks beverages contain steamed milk</strong>. Dairy is the company\'s second-largest food cost after coffee. US dairy spend alone runs into hundreds of millions annually. Milk directly affects drink margins — a meaningful increase in dairy spot prices flows straight through to beverage cost of goods.'},
+        {icon:'🌍',label:'Supply Geography',text:'Fluid milk is produced by <strong>thousands of farms and dozens of large processors</strong> in every major Starbucks market. In the US: Dean Foods (before bankruptcy), Dairy Farmers of America, and regional co-ops. In Europe, China, and other markets: robust local dairy industries with competitive regional supply. Seasonal price fluctuations exist but structural shortage in developed markets is rare.'},
+        {icon:'🔄',label:'Substitutability',text:'Starbucks has a unique and growing advantage: it now offers oat, almond, coconut, and soy milk across its entire menu. The availability of <strong>credible plant-based alternatives gives Starbucks genuine leverage</strong> over dairy suppliers — if dairy becomes too expensive or risky, substitution is increasingly viable. This multi-milk strategy strengthens Starbucks\'s negotiating position considerably.'},
+      ],
+      correctQ:'leverage',ax:.21,ay:.24,
+      feedback:'Dairy is a <strong>Leverage Item</strong> for Starbucks. The spend is enormous and directly tied to drink margins (high profit impact), but supply is abundant, regionally distributed, and — crucially — increasingly substitutable with plant-based alternatives (low supply risk). Starbucks exploits this by playing dairy and plant-milk suppliers against each other in procurement, while mandating progressive welfare standards.'
+    },
+    bottleneck:{
+      ingredient:'Specialty Hazelnut Syrup',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Hazelnut Latte is one of Starbucks\'s most popular flavoured drinks globally. Hazelnut syrup itself represents a <strong>tiny fraction of any drink\'s cost</strong> — a pump of syrup adds cents, not dollars. Syrup costs are not a material driver of Starbucks\'s overall margins or competitive pricing. The syrup is the flavour, not the product.'},
+        {icon:'🌍',label:'Supply Geography',text:'<strong>Turkey produces approximately 70–75% of global hazelnut supply</strong> — a near-monopoly origin. In 2024, a late spring frost destroyed an estimated 30–40% of Turkey\'s hazelnut crop in the Black Sea growing region, sending hazelnut prices up over 60% in a matter of weeks. Ferrero (Nutella) and Starbucks are the two largest commercial hazelnut buyers, and both are now competing for a dramatically reduced supply pool.'},
+        {icon:'🔄',label:'Substitutability',text:'Starbucks\'s "Hazelnut Syrup" is a named product in its core menu with a loyal flavour-specific customer following. <strong>Artificial hazelnut essence cannot be substituted silently</strong> — label changes, consumer taste testing, and re-approval processes take 12–18 months. Italy (Piedmont) is a distant alternative origin but supplies only ~3% of global volume and commands a significant price premium.'},
+      ],
+      correctQ:'bottleneck',ax:.79,ay:.74,
+      feedback:'Hazelnut syrup is a <strong>Bottleneck Item</strong> — and the 2024 Turkish frost makes this scenario particularly timely. The direct cost per drink is trivial (low profit impact), but supply risk is now acute: a near-monopoly origin has just suffered a catastrophic crop failure, Starbucks competes with Ferrero for reduced supply, and alternatives take 12–18 months to qualify. Response: emergency strategic buffer-stocking and accelerated development of Italian and US Pacific Northwest hazelnut sources.'
+    },
+    noncrit:{
+      ingredient:'Paper Hot Cups & Sleeves',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Starbucks uses approximately <strong>8 billion disposable cups per year</strong> — an iconic brand touchpoint. However, cups are a cost input with no revenue uplift. A cup does not improve the coffee, justify a higher price, or create loyalty. It is packaging overhead, and Starbucks actively wants customers to switch to reusable alternatives (10-cent discount in many markets).'},
+        {icon:'🌍',label:'Supply Geography',text:'Paper cups are manufactured by <strong>Huhtamaki, Pactiv, Solo Cup, and dozens of regional converters</strong> globally. Starbucks has a mature, pre-qualified supplier base with FSC-certified fibre sourcing. Multiple competing suppliers exist in every major market. Capacity constraints are rare in the global paper packaging industry.'},
+        {icon:'🔄',label:'Substitutability',text:'Cup specifications are standardised and met by <strong>multiple pre-qualified suppliers</strong>. Switching lead time: days to weeks. EU single-use plastics legislation and Starbucks\'s own 2025 sustainability targets are actively pushing this category toward reusable formats — reducing its long-run procurement relevance entirely.'},
+      ],
+      correctQ:'noncrit',ax:.18,ay:.80,
+      feedback:'Paper cups and sleeves are <strong>Non-Critical Items</strong>. Despite their enormous volume and high brand visibility, each unit costs pennies, the supply market is competitive and globally redundant, and switching is frictionless. Starbucks\'s procurement strategy: standardise specs, consolidate with FSC-certified global partners, and invest operationally in reducing this category entirely through reusable cup programs.'
+    }
+  }
+},
+{
+  id:'tsmc',icon:'💻',name:'TSMC',industry:'Semiconductor Manufacturing',
+  context:"TSMC (Taiwan Semiconductor Manufacturing Company) fabricates approximately 90% of the world's most advanced logic chips (below 7nm), serving Apple, NVIDIA, AMD, Qualcomm, and others. Its N3 (3nm) and N2 (2nm) process nodes require extraordinarily specialised, ultra-pure materials with almost no commercial parallel outside semiconductor manufacturing. TSMC processed ~16 million 12-inch equivalent wafers in 2023.",
+  scenarios:{
+    strategic:{
+      ingredient:'300mm Silicon Wafers (EUV-Grade)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'Silicon wafers are the physical substrate on which every chip is built — <strong>without wafers, TSMC produces nothing</strong>. At N3 and N2 nodes, EUV-grade wafers must meet surface roughness specifications measured in fractions of a nanometre. TSMC processes tens of millions of wafers annually; wafer cost is a significant line item in every chip\'s economics.'},
+        {icon:'🌍',label:'Supply Geography',text:'<strong>Two Japanese companies — Shin-Etsu Chemical and Sumco — together control approximately 60% of the global 300mm silicon wafer market.</strong> GlobalWafers (Taiwan), Siltronic (Germany), SK Siltron (Korea), and SEH (Japan) supply most of the remainder. Building a new crystal-growing facility to EUV specification takes 18–24 months and requires specialised equipment with its own supply bottlenecks. TSMC and its wafer suppliers co-develop specifications for each new process node — a relationship spanning decades.'},
+        {icon:'🔄',label:'Substitutability',text:'There is <strong>no substitute for monocrystalline silicon wafers</strong> in TSMC\'s logic manufacturing process. Alternative substrates (GaN, SiC, InP) serve entirely different device categories. Each new TSMC process node requires a new, co-developed wafer specification certified in advance — this is not a market TSMC can spot-buy on short notice.'},
+      ],
+      correctQ:'strategic',ax:.76,ay:.16,
+      feedback:'EUV-grade silicon wafers are a <strong>Strategic Item</strong> of the highest order. They are the literal foundation of every chip TSMC makes (maximum profit impact) and sourced from a global duopoly of two Japanese companies with 18–24 month lead times to expand capacity (very high supply risk). TSMC co-develops wafer technology directly with Shin-Etsu and Sumco, and maintains deep long-term framework agreements — the textbook strategic response.'
+    },
+    leverage:{
+      ingredient:'Bulk Process Chemicals (H₂SO₄, H₂O₂, HF)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'TSMC consumes <strong>hundreds of thousands of tonnes of bulk process chemicals annually</strong> — sulfuric acid, hydrogen peroxide, hydrofluoric acid, and others — used in wafer cleaning, etching, and surface preparation steps. Total chemical spend is measured in billions of NT dollars per year, making this a major operational cost line across all fabs.'},
+        {icon:'🌍',label:'Supply Geography',text:'Semiconductor-grade bulk chemicals are produced by a <strong>diverse global set of large chemical companies</strong>: BASF, Air Liquide, Honeywell, Kanto Chemical, Stella Chemifa, and others. TSMC\'s official approved vendor list for chemicals runs to over a dozen global suppliers. While semiconductor-grade purity commands a premium, multiple producers have achieved the required certifications.'},
+        {icon:'🔄',label:'Substitutability',text:'Switching between approved chemical suppliers requires re-qualification (typically 4–8 weeks for standard grades), but <strong>multiple qualified alternatives exist</strong> for nearly every bulk chemical category. TSMC\'s enormous purchasing volume — among Asia\'s largest industrial chemical buyers — gives it significant leverage on pricing, quality SLAs, and delivery reliability.'},
+      ],
+      correctQ:'leverage',ax:.25,ay:.24,
+      feedback:'Bulk process chemicals are <strong>Leverage Items</strong> for TSMC. The total spend is large and operationally essential (high profit impact through manufacturing continuity), but multiple qualified global suppliers compete in a commercially active market (low-to-moderate supply risk). TSMC uses its scale: annual competitive tenders, multi-supplier strategies, aggressive purity and delivery SLA requirements, and volume-based pricing.'
+    },
+    bottleneck:{
+      ingredient:'Photoresist (EUV-Grade)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'EUV photoresist is the light-sensitive chemical coating applied to wafers before laser exposure in lithography. It is consumed in <strong>very small quantities per wafer by mass</strong>, and its direct cost is a modest line item relative to TSMC\'s overall fab operating costs. On its own, photoresist does not drive TSMC\'s margins.'},
+        {icon:'🌍',label:'Supply Geography',text:'EUV-compatible photoresist is among the most technically demanding chemicals in any industry. As of 2024, <strong>JSR Corporation and Tokyo Ohka Kogyo (TOK) — both Japanese — together supply the overwhelming majority of EUV photoresist globally.</strong> JSR was taken private by the Japanese government in 2023 partly due to concerns about foreign acquisition of this critical supply. US export controls introduced in 2023 have added a new layer of geopolitical complexity to this already concentrated market.'},
+        {icon:'🔄',label:'Substitutability',text:'Qualifying a new photoresist for a single TSMC process node takes <strong>12–24 months of chemical development, testing, and yield validation</strong>. Photoresist chemistry is proprietary and deeply co-developed with TSMC. There is currently no viable non-Japanese alternative qualified for EUV production at leading-edge nodes. A supply disruption from JSR or TOK would directly halt N3/N2 wafer production.'},
+      ],
+      correctQ:'bottleneck',ax:.82,ay:.72,
+      feedback:'EUV photoresist is a <strong>Bottleneck Item</strong>. Its cost per wafer is modest (low direct profit impact), but it is sourced from a Japanese duopoly in a market now subject to government intervention and US export controls — with 12–24 month qualification timelines for any new supplier. A disruption would halt TSMC\'s most advanced — and most profitable — production lines. TSMC\'s response: strategic inventory stockpiling and co-funding of photoresist R&D at JSR and TOK.'
+    },
+    noncrit:{
+      ingredient:'Ultrapure Water (UPW)',
+      clues:[
+        {icon:'💰',label:'Volume & Value',text:'TSMC used approximately <strong>35 billion gallons of ultrapure water in 2022</strong> — one of its largest operational inputs by volume. UPW is essential for cleaning wafers between every process step. Water itself costs almost nothing per unit; the expense is in the on-site ultra-purification systems that TSMC owns and operates at every fab.'},
+        {icon:'🌍',label:'Supply Geography',text:'Water is sourced from <strong>local municipal utilities and government-managed reservoirs</strong> near each fab. Taiwan faced a severe drought in 2021, causing genuine alarm, but TSMC responded rapidly: it now recycles over 90% of process water on-site, has secured dedicated reservoir allocation from the Taiwan government, and negotiated public water infrastructure commitments in Arizona as a condition of the Phoenix Gigafab agreement.'},
+        {icon:'🔄',label:'Substitutability',text:'Water sourcing is a <strong>local infrastructure management challenge</strong> rather than a competitive procurement decision. TSMC has invested heavily in on-site treatment plants and recirculation systems at each fab, making it largely self-sufficient. Long-term climate risk exists but is managed through engineering (recycling), infrastructure agreements, and fab site selection — not through supplier switching.'},
+      ],
+      correctQ:'noncrit',ax:.20,ay:.79,
+      feedback:'Ultrapure water sits firmly in the <strong>Non-Critical</strong> quadrant — perhaps counterintuitively given the volumes. Water itself is essentially free; the cost is in purification infrastructure that TSMC owns and controls. Supply is managed through municipal partnerships and TSMC\'s own 90%+ recycling systems. The 2021 Taiwan drought was alarming but demonstrated that TSMC\'s infrastructure response (not supplier switching) is the right management approach for this category.'
+    }
+  }
+}
+];
+
+// ── STATE ──
+let currentCo = 0;
+let currentQKey = 'strategic';
+let pinX = null, pinY = null, answered = false;
+let results = {}; // results[coId][qkey] = 'correct'|'wrong'
+let score = 0, totalAnswered = 0;
+COMPANIES.forEach(c => { results[c.id] = {}; });
+
+function getQFromPos(rx,ry){ if(ry<.5&&rx<.5)return'leverage'; if(ry<.5&&rx>=.5)return'strategic'; if(ry>=.5&&rx<.5)return'noncrit'; return'bottleneck'; }
+
+// ── README ──
+function toggleReadme(){
+  const body = document.getElementById('readme-body');
+  const chev = document.getElementById('readme-chevron');
+  const btn  = document.getElementById('readme-btn');
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open);
+}
+
+// ── RENDER ──
+function renderAll(){ renderCoTabs(); renderQuadTracker(); renderScenario(); updateProgress(); }
+
+function renderCoTabs(){
+  const el = document.getElementById('co-tabs');
+  el.innerHTML = COMPANIES.map((c,i)=>{
+    const done = QKEYS.every(q=>results[c.id][q]);
+    const active = i===currentCo;
+    return `<button class="ctab${active?' active':''}" onclick="selectCo(${i})" aria-pressed="${active}">
+      <span class="ctab-emoji">${c.icon}</span>${c.name}${done?'<span class="ctab-done-icon"> ✓</span>':''}
+    </button>`;
+  }).join('');
+}
+
+function renderQuadTracker(){
+  const c = COMPANIES[currentCo];
+  const el = document.getElementById('quad-tracker');
+  el.innerHTML = `<span class="qt-label">Quadrants:</span>` + QKEYS.map(qk=>{
+    const r = results[c.id][qk];
+    let checkHtml, checkClass;
+    if(!r){ checkHtml='○'; checkClass='pending'; }
+    else if(r==='correct'){ checkHtml='✓'; checkClass='correct'; }
+    else{ checkHtml='✗'; checkClass='wrong'; }
+    return `<div class="qt-item ${qk}" title="${QNAMES[qk]}">
+      <span class="qt-check ${checkClass}">${checkHtml}</span>${QNAMES[qk]}
+    </div>`;
+  }).join('');
+}
+
+function renderScenario(){
+  const c = COMPANIES[currentCo];
+  const s = c.scenarios[currentQKey];
+  const el = document.getElementById('spanel');
+  el.innerHTML = `
+    <div class="co-tag"><span>${c.icon}</span>${c.name} · ${c.industry}</div>
+    <p class="context-text">${c.context}</p>
+    <hr class="s-divider">
+    <div class="s-num">Current Scenario</div>
+    <div class="s-title">${s.ingredient}</div>
+    <hr class="s-divider">
+    <div class="clue-head">🔍 Sourcing Clues</div>
+    ${s.clues.map(cl=>`<div class="clue-card"><div class="clue-icon">${cl.icon}</div><div class="clue-text"><strong>${cl.label}:</strong> ${cl.text}</div></div>`).join('')}
+    <div class="task-box"><strong>Your task:</strong> Based on the three clues above, click the matrix to place this ingredient. Consider: how much does it drive profit, and how risky is the supply side?</div>
+  `;
+  resetMatrix();
+}
+
+function resetMatrix(){
+  const already = results[COMPANIES[currentCo].id][currentQKey];
+  pinX=null; pinY=null; answered=!!already;
+  document.getElementById('pin').classList.remove('active');
+  document.getElementById('correct-marker').style.display='none';
+  document.getElementById('fb').style.display='none';
+  document.getElementById('co-complete').style.display='none';
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('btn-submit').style.display='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-skip').style.display='';
+  document.getElementById('btn-row').style.display='flex';
+  document.getElementById('hint-txt').textContent='Click the matrix to drop your pin, then press Submit Answer.';
+
+  if(already){
+    const s = COMPANIES[currentCo].scenarios[currentQKey];
+    placeMarker(s.ax, s.ay, s.correctQ);
+    showFeedback(already, s);
+    document.getElementById('btn-submit').style.display='none';
+    document.getElementById('btn-skip').style.display='none';
+    document.getElementById('hint-txt').textContent='★ Star marks the intended position. You have already answered this scenario.';
+    // show next if any remain
+    const hasNext = findNext();
+    if(hasNext) document.getElementById('btn-next').style.display='';
+  }
+}
+
+function selectCo(i){
+  currentCo=i;
+  // find first unanswered in this company
+  const firstUnanswered = QKEYS.find(q=>!results[COMPANIES[i].id][q]);
+  currentQKey = firstUnanswered || 'strategic';
+  renderAll();
+}
+
+// Matrix click
+document.getElementById('mgrid').addEventListener('click', function(e){
+  if(answered)return;
+  const rect=this.getBoundingClientRect();
+  pinX=Math.max(.04,Math.min(.96,(e.clientX-rect.left)/rect.width));
+  pinY=Math.max(.04,Math.min(.96,(e.clientY-rect.top)/rect.height));
+  const q=getQFromPos(pinX,pinY);
+  const pin=document.getElementById('pin');
+  pin.style.background=QC[q];
+  pin.style.left=(pinX*100)+'%';
+  pin.style.top=(pinY*100)+'%';
+  pin.classList.add('active');
+  document.getElementById('btn-submit').disabled=false;
+});
+
+function placeMarker(ax,ay,q){
+  const m=document.getElementById('correct-marker');
+  m.style.left=`calc(${ax*100}% - 11px)`;
+  m.style.top=`calc(${ay*100}% - 11px)`;
+  m.style.background=QC[q];
+  m.style.display='block';
+}
+
+function showFeedback(outcome,s){
+  const fb=document.getElementById('fb');
+  const map={correct:{cls:'correct',title:'✅ Correct!'},wrong:{cls:'incorrect',title:'❌ Not quite.'}};
+  const {cls,title}=map[outcome]||map.wrong;
+  fb.className='fb '+cls;
+  fb.style.display='block';
+  document.getElementById('fb-title').innerHTML=title+` — This is a <strong>${QNAMES[s.correctQ]}</strong> item.`;
+  document.getElementById('fb-body').innerHTML=s.feedback;
+}
+
+function submitAnswer(){
+  if(pinX===null||answered)return;
+  answered=true;
+  const c=COMPANIES[currentCo];
+  const s=c.scenarios[currentQKey];
+  const chosen=getQFromPos(pinX,pinY);
+  const outcome=chosen===s.correctQ?'correct':'wrong';
+  if(outcome==='correct')score+=2;
+  totalAnswered++;
+  results[c.id][currentQKey]=outcome;
+  placeMarker(s.ax,s.ay,s.correctQ);
+  showFeedback(outcome,s);
+  document.getElementById('btn-submit').style.display='none';
+  document.getElementById('btn-skip').style.display='none';
+  document.getElementById('hint-txt').textContent='★ The star marks the intended position.';
+  updateProgress();
+  renderQuadTracker();
+  renderCoTabs();
+
+  // Check if this company is now complete
+  const coDone = QKEYS.every(q=>results[c.id][q]);
+  if(coDone){
+    showCoComplete();
+  } else {
+    const hasNext=findNext();
+    if(hasNext) document.getElementById('btn-next').style.display='';
+    else if(totalAnswered===COMPANIES.length*QKEYS.length) document.getElementById('btn-next').style.display='';
+  }
+}
+
+function showCoComplete(){
+  const c=COMPANIES[currentCo];
+  const coResults=QKEYS.map(q=>results[c.id][q]);
+  const correctCount=coResults.filter(r=>r==='correct').length;
+  let emoji='🎯', msg='';
+  if(correctCount===4){emoji='🏆';msg='Perfect score on this company! You nailed every quadrant.';}
+  else if(correctCount===3){emoji='⭐';msg='Great work — 3 out of 4 correct. Review the explanation for the one you missed.';}
+  else if(correctCount===2){emoji='📚';msg='2 out of 4 — review the feedback for each scenario before moving on.';}
+  else{emoji='💡';msg='Keep going — read the explanations carefully to understand what drives each quadrant.';}
+
+  document.getElementById('coc-emoji').textContent=emoji;
+  document.getElementById('coc-title').textContent=`${c.name} Complete!`;
+  document.getElementById('coc-body').textContent=msg+' Try another company using the button below, or use the tabs at the top.';
+  const scoresEl=document.getElementById('coc-scores');
+  scoresEl.innerHTML=QKEYS.map(q=>{
+    const r=results[c.id][q];
+    const isC=r==='correct';
+    return `<div class="co-sc-item ${isC?'correct-item':'wrong-item'}">${isC?'✓':'✗'} ${QNAMES[q]} — ${c.scenarios[q].ingredient}</div>`;
+  }).join('');
+  document.getElementById('fb').style.display='none';
+  document.getElementById('hint-txt').textContent='';
+  document.getElementById('btn-row').style.display='none';
+  document.getElementById('co-complete').style.display='block';
+
+  // Check if ALL done
+  const allDone=COMPANIES.every(co=>QKEYS.every(q=>results[co.id][q]));
+  if(allDone){
+    setTimeout(()=>{ showResults(); },3000);
+  }
+}
+
+function goNextCompany(){
+  const nextCoIdx=COMPANIES.findIndex((co,i)=>QKEYS.some(q=>!results[co.id][q]));
+  if(nextCoIdx!==-1){
+    selectCo(nextCoIdx);
+  } else {
+    showResults();
+  }
+}
+
+function findNext(){
+  const c=COMPANIES[currentCo];
+  const nextQ=QKEYS.find(q=>!results[c.id][q]);
+  if(nextQ)return{co:currentCo,q:nextQ};
+  const nextCoIdx=COMPANIES.findIndex((co,i)=>QKEYS.some(q=>!results[co.id][q]));
+  if(nextCoIdx!==-1){
+    const nq=QKEYS.find(q=>!results[COMPANIES[nextCoIdx].id][q]);
+    return{co:nextCoIdx,q:nq};
+  }
+  return null;
+}
+
+function nextScenario(){
+  const next=findNext();
+  if(next){
+    currentCo=next.co;
+    currentQKey=next.q;
+    renderAll();
+  } else {
+    showResults();
+  }
+}
+
+function skipCurrent(){
+  const c=COMPANIES[currentCo];
+  if(!results[c.id][currentQKey]){
+    results[c.id][currentQKey]='wrong';
+    totalAnswered++;
+    updateProgress();
+    renderCoTabs();
+    renderQuadTracker();
+  }
+  const next=findNext();
+  if(next){ currentCo=next.co; currentQKey=next.q; renderAll(); }
+  else showResults();
+}
+
+function updateProgress(){
+  const total=COMPANIES.length*QKEYS.length;
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('total-display').textContent=total*2;
+  document.getElementById('answered-txt').textContent=`${totalAnswered} of ${total} answered`;
+  document.getElementById('prog-fill').style.width=`${(totalAnswered/total)*100}%`;
+}
+
+function showResults(){
+  document.getElementById('main-view').style.display='none';
+  document.getElementById('results-screen').style.display='flex';
+  const total=COMPANIES.length*QKEYS.length*2;
+  const pct=score/total;
+  let emoji='🎓',title='Activity Complete!';
+  if(pct>=.9){emoji='🏆';title='Outstanding — you\'ve mastered the Kraljic Matrix!';}
+  else if(pct>=.7){emoji='⭐';title='Strong performance — solid grasp of the framework!';}
+  else if(pct>=.5){emoji='👍';title='Good effort — review the quadrant explanations to sharpen your thinking.';}
+  else{emoji='📚';title='Keep practising — the patterns will become clearer with each attempt!';}
+  document.getElementById('res-emoji').textContent=emoji;
+  document.getElementById('res-title').textContent=title;
+  document.getElementById('res-score').textContent=`You scored ${score} out of ${total} points`;
+  const bd=document.getElementById('res-breakdown');
+  bd.innerHTML=COMPANIES.map(c=>`
+    <div class="res-section">
+      <h3>${c.icon} ${c.name}</h3>
+      ${QKEYS.map(qk=>{
+        const r=results[c.id][qk]||'wrong';
+        const dc=r==='correct'?'rb-c':'rb-w';
+        const lbl=r==='correct'?'Correct (+2)':'Incorrect (0)';
+        return `<div class="rb-item"><div class="rb-dot ${dc}"></div><span>${QNAMES[qk]} — ${c.scenarios[qk].ingredient} &nbsp;·&nbsp; ${lbl}</span></div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+function restart(){
+  score=0;totalAnswered=0;currentCo=0;currentQKey='strategic';
+  COMPANIES.forEach(c=>{results[c.id]={};});
+  document.getElementById('results-screen').style.display='none';
+  document.getElementById('main-view').style.display='flex';
+  renderAll();
+}
+
+// INIT
+renderAll();
+</script>
+</body>
+</html>
