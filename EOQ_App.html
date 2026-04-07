@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EOQ Explorer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:system-ui,sans-serif;background:#f8f7f4;color:#1a1a18}
+body{
+  display:grid;
+  grid-template-rows:auto 1fr;
+  height:100vh;
+  padding:clamp(6px,1vw,14px);
+  gap:clamp(5px,0.8vw,10px);
+  overflow:hidden;
+}
+
+/* TOP METRICS */
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:clamp(5px,0.7vw,10px);
+}
+.mc{
+  background:#f1efe8;
+  border-radius:clamp(6px,0.8vw,10px);
+  padding:clamp(9px,1.1vw,16px) clamp(10px,1.2vw,18px);
+}
+.ml{font-size:clamp(11px,1.1vw,15px);color:#5f5e5a;margin-bottom:3px}
+.mv{font-size:clamp(17px,2vw,28px);font-weight:700;color:#1a1a18;white-space:nowrap}
+.mv.warn{color:#854f0b}
+.mv.ok{color:#3b6d11}
+.cc{border-radius:clamp(6px,0.8vw,10px);padding:clamp(9px,1.1vw,16px) clamp(10px,1.2vw,18px);border:1px solid}
+.cc.hold{background:#faece7;border-color:#f0997b}
+.cc.ord {background:#e1f5ee;border-color:#5dcaa5}
+.cc .cl{font-size:clamp(11px,1.1vw,15px);margin-bottom:2px}
+.cc.hold .cl{color:#993c1d}
+.cc.ord  .cl{color:#0f6e56}
+.cc .cv{font-size:clamp(17px,2vw,28px);font-weight:700;white-space:nowrap}
+.cc.hold .cv{color:#712b13}
+.cc.ord  .cv{color:#085041}
+
+/* MAIN */
+.main{
+  display:grid;
+  grid-template-columns:clamp(185px,19vw,250px) 1fr;
+  gap:clamp(6px,0.9vw,14px);
+  min-height:0;
+}
+
+/* LEFT PANEL */
+.ctrl-card{
+  background:#fff;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:clamp(8px,1vw,14px);
+  padding:clamp(10px,1.2vw,18px);
+  display:flex;
+  flex-direction:column;
+  gap:clamp(8px,1vw,14px);
+  overflow:hidden;
+}
+.clabel{font-size:clamp(12px,1.15vw,16px);color:#5f5e5a;margin-bottom:3px}
+.crow{display:flex;align-items:center;gap:8px}
+.cval{font-size:clamp(13px,1.25vw,17px);font-weight:700;color:#1a1a18;min-width:clamp(44px,4.5vw,62px);text-align:right}
+input[type=range]{flex:1;accent-color:#378add}
+.fbox{
+  background:#f1efe8;border-radius:8px;
+  padding:clamp(8px,1vw,13px);
+  font-size:clamp(12px,1.15vw,16px);
+  color:#5f5e5a;line-height:2;
+}
+.fbox b{color:#1a1a18;font-weight:700}
+.hint{font-size:clamp(11px,1vw,14px);color:#888780;line-height:1.6}
+.hint span{color:#ba7517;font-weight:700}
+
+/* Legend at bottom of left panel */
+.leg{display:flex;flex-direction:column;gap:clamp(5px,0.6vw,9px);margin-top:auto;padding-top:6px;border-top:1px solid rgba(0,0,0,0.06)}
+.li{display:flex;align-items:center;gap:9px;font-size:clamp(12px,1.15vw,16px);color:#5f5e5a}
+.ld-solid{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+.ld-dash{width:22px;flex-shrink:0;border-top:3px dashed;height:0;margin:2px 0}
+.ld-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+
+/* CHART COLUMN */
+.chart-col{display:flex;flex-direction:column;min-height:0;gap:6px}
+.banner{
+  display:none;background:#faeeda;border:1px solid #ef9f27;
+  border-radius:8px;
+  padding:clamp(7px,0.85vw,12px) clamp(10px,1.1vw,16px);
+  font-size:clamp(12px,1.15vw,16px);color:#633806;line-height:1.5;flex-shrink:0;
+}
+.banner.on{display:block}
+.svg-wrap{flex:1;min-height:0;touch-action:none;position:relative}
+.svg-wrap svg{display:block;width:100%;height:100%}
+
+@media (prefers-color-scheme:dark){
+  html,body{background:#1a1a18;color:#f1efe8}
+  .mc{background:#2c2c2a}
+  .ml,.clabel{color:#888780}
+  .mv,.cval,.fbox b{color:#f1efe8}
+  .ctrl-card{background:#2c2c2a;border-color:rgba(255,255,255,0.08)}
+  .fbox{background:#2c2c2a;color:#888780}
+  .hint{color:#5f5e5a}
+  .li{color:#888780}
+  .leg{border-top-color:rgba(255,255,255,0.07)}
+}
+</style>
+</head>
+<body>
+
+<div class="metrics">
+  <div class="mc"><div class="ml">Your Q</div><div class="mv" id="mq">200</div></div>
+  <div class="mc"><div class="ml">EOQ (optimal)</div><div class="mv ok" id="meoq">200</div></div>
+  <div class="mc"><div class="ml">Extra cost / yr</div><div class="mv ok" id="mpen">$0</div></div>
+  <div class="cc hold">
+    <div class="cl">Holding cost at Q</div>
+    <div class="cv" id="chc">$500</div>
+    <div class="cl" style="font-size:clamp(10px,0.9vw,12px);margin-top:2px">(Q/2) × H</div>
+  </div>
+  <div class="cc ord">
+    <div class="cl">Ordering cost at Q</div>
+    <div class="cv" id="coc">$500</div>
+    <div class="cl" style="font-size:clamp(10px,0.9vw,12px);margin-top:2px">(D/Q) × S</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="ctrl-card">
+    <div>
+      <div class="clabel">Annual demand D (units/yr)</div>
+      <div class="crow"><input type="range" id="slD" min="100" max="5000" step="50" value="1000" oninput="redraw()"><span class="cval" id="vD">1,000</span></div>
+    </div>
+    <div>
+      <div class="clabel">Holding cost H ($/unit/yr)</div>
+      <div class="crow"><input type="range" id="slH" min="1" max="50" step="1" value="5" oninput="redraw()"><span class="cval" id="vH">$5</span></div>
+    </div>
+    <div>
+      <div class="clabel">Ordering cost S ($/order)</div>
+      <div class="crow"><input type="range" id="slS" min="10" max="500" step="10" value="100" oninput="redraw()"><span class="cval" id="vS">$100</span></div>
+    </div>
+    <div class="fbox">
+      TC = (Q/2)·H + (D/Q)·S<br>
+      EOQ = √(2DS/H)<br>
+      EOQ = <b id="feoq">200</b> units<br>
+      Min TC = <b id="ftc">$1,000</b>
+    </div>
+    <div class="hint">Drag the <span>orange dot</span> along the curve to see how total cost changes as Q deviates from EOQ.</div>
+    <div class="leg">
+      <div class="li"><div class="ld-solid" style="background:#378add"></div>Total cost</div>
+      <div class="li"><div class="ld-dash" style="border-color:#d85a30"></div>Holding cost</div>
+      <div class="li"><div class="ld-dash" style="border-color:#1d9e75"></div>Ordering cost</div>
+      <div class="li"><div class="ld-dot" style="background:#ba7517"></div>Your Q (draggable)</div>
+    </div>
+  </div>
+
+  <div class="chart-col">
+    <div class="banner" id="banner"></div>
+    <div class="svg-wrap" id="svgWrap"></div>
+  </div>
+</div>
+
+<script>
+let userQ = 200, dragging = false;
+const VW = 720, VH = 430;
+const PAD = {l:88, r:98, t:26, b:48};
+const CW  = VW - PAD.l - PAD.r;
+const CH  = VH - PAD.t - PAD.b;
+
+const $    = id => document.getElementById(id);
+const Pr   = () => ({D:+$('slD').value, H:+$('slH').value, S:+$('slS').value});
+const eoqF = (D,H,S) => Math.sqrt(2*D*S/H);
+const tcF  = (q,D,H,S) => (q/2)*H + (D/q)*S;
+const hcF  = (q,H) => (q/2)*H;
+const ocF  = (q,D,S) => (D/q)*S;
+const fmt  = v => '$' + Math.round(v).toLocaleString();
+const fx   = v => v.toFixed(1);
+
+function redraw() {
+  const {D,H,S} = Pr();
+  const eq   = eoqF(D,H,S);
+  const qMin = eq * 0.18, qMax = eq * 3.2;
+  userQ = Math.max(qMin, Math.min(qMax, userQ));
+
+  const tcMin = tcF(eq,D,H,S);
+  const yMax  = tcF(qMin,D,H,S) * 1.10;
+  const yMin  = 0;
+
+  const xp = q => PAD.l + ((q-qMin)/(qMax-qMin))*CW;
+  const yp = v => PAD.t + CH*(1-(v-yMin)/(yMax-yMin));
+
+  const N = 200;
+  let tcP='', hcP='', ocP='';
+  for (let i=0; i<=N; i++) {
+    const q   = qMin + (qMax-qMin)*i/N;
+    const pre = i===0 ? 'M' : 'L';
+    tcP += pre + fx(xp(q)) + ',' + fx(yp(tcF(q,D,H,S))) + ' ';
+    hcP += pre + fx(xp(q)) + ',' + fx(yp(hcF(q,H)))     + ' ';
+    ocP += pre + fx(xp(q)) + ',' + fx(yp(ocF(q,D,S)))   + ' ';
+  }
+
+  const xE = xp(eq),    yE = yp(tcMin);
+  const xU = xp(userQ), yU = yp(tcF(userQ,D,H,S));
+  const tcU     = tcF(userQ,D,H,S);
+  const penalty = tcU - tcMin;
+  const pct     = ((tcU/tcMin)-1)*100;
+
+  const dark = matchMedia('(prefers-color-scheme:dark)').matches;
+  const axC  = dark ? 'rgba(180,178,169,0.35)' : 'rgba(136,135,128,0.3)';
+  const grC  = dark ? 'rgba(136,135,128,0.1)'  : 'rgba(136,135,128,0.1)';
+  const txC  = dark ? '#aaa9a3' : '#888780';
+
+  // Grid
+  let grid = '';
+  for (let i=0; i<=6; i++) {
+    const q = qMin+(qMax-qMin)*i/6, x = xp(q);
+    grid += `<line x1="${fx(x)}" y1="${PAD.t}" x2="${fx(x)}" y2="${fx(PAD.t+CH)}" stroke="${grC}" stroke-width="0.6"/>`;
+    grid += `<text x="${fx(x)}" y="${fx(PAD.t+CH+20)}" text-anchor="middle" font-size="12" fill="${txC}">${Math.round(q)}</text>`;
+  }
+  for (let i=0; i<=5; i++) {
+    const v = yMin+(yMax-yMin)*i/5, y = yp(v);
+    grid += `<line x1="${PAD.l}" y1="${fx(y)}" x2="${fx(VW-PAD.r)}" y2="${fx(y)}" stroke="${grC}" stroke-width="0.6"/>`;
+  }
+
+  // Y-axis custom labels: $0, TC at EOQ (blue), TC at userQ (orange if deviated)
+  let yLbls = '';
+  yLbls += `<text x="${PAD.l-7}" y="${fx(yp(0)+4)}" text-anchor="end" font-size="12" fill="${txC}">$0</text>`;
+  yLbls += `<text x="${PAD.l-7}" y="${fx(yE+4)}" text-anchor="end" font-size="12.5" fill="#185fa5" font-weight="700">${fmt(tcMin)}</text>`;
+  if (penalty > tcMin*0.015) {
+    yLbls += `<text x="${PAD.l-7}" y="${fx(yU+4)}" text-anchor="end" font-size="12.5" fill="#ba7517" font-weight="700">${fmt(tcU)}</text>`;
+  }
+
+  // Horizontal dashed lines from curve points to Y-axis
+  const hlineEOQ = `<line x1="${PAD.l}" y1="${fx(yE)}" x2="${fx(xE)}" y2="${fx(yE)}" stroke="#378add" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.55"/>`;
+  const hlineU   = penalty > tcMin*0.015
+    ? `<line x1="${PAD.l}" y1="${fx(yU)}" x2="${fx(xU)}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.65"/>`
+    : '';
+
+  // Penalty bracket on Y axis
+  let penBracket = '';
+  if (penalty > tcMin*0.015) {
+    const bx  = PAD.l - 52;
+    const tk  = 6;
+    const mid = (yE+yU)/2;
+    penBracket = `
+      <line x1="${bx}" y1="${fx(yE)}" x2="${bx}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="2"/>
+      <line x1="${bx}" y1="${fx(yE)}" x2="${bx+tk}" y2="${fx(yE)}" stroke="#ba7517" stroke-width="2"/>
+      <line x1="${bx}" y1="${fx(yU)}" x2="${bx+tk}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="2"/>
+      <text x="${bx-4}" y="${fx(mid+4)}" text-anchor="end" font-size="12" fill="#854f0b" font-weight="700">+${fmt(penalty)}</text>
+    `;
+  }
+
+  // Penalty shade
+  const shade = penalty > 0.5
+    ? `<rect x="${fx(Math.min(xE,xU))}" y="${fx(yU)}" width="${fx(Math.abs(xU-xE))}" height="${fx(yE-yU)}" fill="rgba(186,117,23,0.10)"/>`
+    : '';
+
+  // EOQ vertical line
+  const eoqVline = `<line x1="${fx(xE)}" y1="${PAD.t}" x2="${fx(xE)}" y2="${fx(PAD.t+CH)}" stroke="#378add" stroke-width="1" stroke-dasharray="5,3" opacity="0.35"/>`;
+
+  // Gap line at userQ between HC and OC
+  const yHU = yp(hcF(userQ,H)), yOU = yp(ocF(userQ,D,S));
+  const gapLine = Math.abs(yHU-yOU) > 5
+    ? `<line x1="${fx(xU)}" y1="${fx(yHU)}" x2="${fx(xU)}" y2="${fx(yOU)}" stroke="#ba7517" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.75"/>`
+    : '';
+
+  // Inline labels at right end of curves
+  const qR   = qMax * 0.96;
+  const xLbl = fx(VW - PAD.r + 6);
+  const inlineLbls = `
+    <text x="${xLbl}" y="${fx(yp(tcF(qR,D,H,S))+4)}"  font-size="12.5" fill="#185fa5" font-weight="700">Total cost</text>
+    <text x="${xLbl}" y="${fx(yp(hcF(qR,H))+4)}"       font-size="12.5" fill="#b83c18" font-weight="700">Holding</text>
+    <text x="${xLbl}" y="${fx(yp(ocF(qR,D,S))+4)}"     font-size="12.5" fill="#0a7a57" font-weight="700">Ordering</text>
+  `;
+
+  // EOQ label
+  const eoqLbl = `<text x="${fx(xE+7)}" y="${fx(yE-12)}" font-size="12.5" fill="#185fa5" font-weight="700">EOQ = ${Math.round(eq)}</text>`;
+
+  // Axis labels
+  const axLbls = `
+    <text x="${fx(PAD.l+CW/2)}" y="${fx(VH-7)}" text-anchor="middle" font-size="13.5" fill="${txC}" font-weight="600">Order quantity (Q)</text>
+    <text x="14" y="${fx(PAD.t+CH/2)}" text-anchor="middle" font-size="13.5" fill="${txC}" font-weight="600" transform="rotate(-90,14,${PAD.t+CH/2})">Cost ($)</text>
+  `;
+
+  $('svgWrap').innerHTML = `<svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%">
+<rect x="${PAD.l}" y="${PAD.t}" width="${CW}" height="${CH}" fill="none" stroke="${axC}" stroke-width="0.8"/>
+${grid}${shade}${eoqVline}${hlineEOQ}${hlineU}${penBracket}
+<path d="${hcP}" fill="none" stroke="#d85a30" stroke-width="2.2" stroke-dasharray="7,4"/>
+<path d="${ocP}" fill="none" stroke="#1d9e75" stroke-width="2.2" stroke-dasharray="7,4"/>
+<path d="${tcP}" fill="none" stroke="#378add" stroke-width="3"/>
+${gapLine}
+<circle cx="${fx(xE)}" cy="${fx(yE)}" r="6" fill="#378add" stroke="#fff" stroke-width="2"/>
+${eoqLbl}
+<circle cx="${fx(xU)}" cy="${fx(yU)}" r="10" fill="#ba7517" stroke="#fff" stroke-width="2.5" id="dragDot" style="cursor:grab"/>
+${yLbls}${inlineLbls}${axLbls}
+</svg>`;
+
+  $('vD').textContent   = (+$('slD').value).toLocaleString();
+  $('vH').textContent   = '$' + $('slH').value;
+  $('vS').textContent   = '$' + $('slS').value;
+  $('feoq').textContent = Math.round(eq).toLocaleString();
+  $('ftc').textContent  = fmt(tcMin);
+  $('mq').textContent   = Math.round(userQ).toLocaleString();
+  $('meoq').textContent = Math.round(eq).toLocaleString();
+  $('chc').textContent  = fmt(hcF(userQ,H));
+  $('coc').textContent  = fmt(ocF(userQ,D,S));
+
+  const penEl = $('mpen');
+  penEl.textContent = fmt(penalty);
+  penEl.className   = 'mv' + (penalty > 0.5 ? ' warn' : ' ok');
+
+  const ban = $('banner');
+  if (penalty > 0.5) {
+    const side = userQ > eq ? 'Holding cost dominates — too much inventory.' : 'Ordering cost dominates — too many small orders.';
+    ban.className = 'banner on';
+    ban.innerHTML = `Q = <b>${Math.round(userQ).toLocaleString()}</b> vs EOQ = <b>${Math.round(eq).toLocaleString()}</b> → extra <b>${fmt(penalty)}/yr</b> (${pct.toFixed(1)}% above minimum). ${side}`;
+  } else {
+    ban.className = 'banner';
+  }
+
+  const dot = document.getElementById('dragDot');
+  if (dot) {
+    dot.addEventListener('mousedown', onDown);
+    dot.addEventListener('touchstart', onDown, {passive:false});
+  }
+}
+
+function svgXtoQ(clientX) {
+  const rect = $('svgWrap').getBoundingClientRect();
+  const frac = (clientX - rect.left) / rect.width;
+  const {D,H,S} = Pr();
+  const eq = eoqF(D,H,S);
+  const qMin = eq*0.18, qMax = eq*3.2;
+  return Math.max(qMin, Math.min(qMax, qMin + ((frac*VW - PAD.l)/CW)*(qMax-qMin)));
+}
+function onDown(e) {
+  e.preventDefault(); dragging = true;
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onUp);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend',  onUp);
+}
+function onMove(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  userQ = svgXtoQ(e.touches ? e.touches[0].clientX : e.clientX);
+  redraw();
+}
+function onUp() {
+  dragging = false;
+  document.removeEventListener('mousemove', onMove);
+  document.removeEventListener('mouseup',   onUp);
+  document.removeEventListener('touchmove', onMove);
+  document.removeEventListener('touchend',  onUp);
+}
+
+redraw();
+</script>
+</body>
+</html>
