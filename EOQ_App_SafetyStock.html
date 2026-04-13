@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EOQ Explorer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:system-ui,sans-serif;background:#f8f7f4;color:#1a1a18}
+body{
+  display:grid;
+  grid-template-rows:auto 1fr;
+  height:100vh;
+  padding:clamp(6px,1vw,14px);
+  gap:clamp(5px,0.8vw,10px);
+  overflow:hidden;
+}
+
+/* TOP METRICS */
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:clamp(5px,0.7vw,10px);
+}
+.mc{
+  background:#f1efe8;
+  border-radius:clamp(6px,0.8vw,10px);
+  padding:clamp(7px,1vw,14px) clamp(8px,1.1vw,16px);
+}
+.ml{font-size:clamp(10px,1vw,14px);color:#5f5e5a;margin-bottom:3px;line-height:1.3}
+.mv{font-size:clamp(15px,1.8vw,26px);font-weight:700;color:#1a1a18;white-space:nowrap}
+.mv.warn{color:#854f0b}
+.mv.ok{color:#3b6d11}
+.cc{border-radius:clamp(6px,0.8vw,10px);padding:clamp(7px,1vw,14px) clamp(8px,1.1vw,16px);border:1px solid}
+.cc.hold{background:#faece7;border-color:#f0997b}
+.cc.ord {background:#e1f5ee;border-color:#5dcaa5}
+.cc.ss  {background:#ede9fb;border-color:#afa9ec}
+.cc .cl{font-size:clamp(10px,1vw,14px);margin-bottom:2px;line-height:1.3}
+.cc.hold .cl{color:#993c1d}
+.cc.ord  .cl{color:#0f6e56}
+.cc.ss   .cl{color:#3c3489}
+.cc .cv{font-size:clamp(15px,1.8vw,26px);font-weight:700;white-space:nowrap}
+.cc.hold .cv{color:#712b13}
+.cc.ord  .cv{color:#085041}
+.cc.ss   .cv{color:#26215c}
+
+/* MAIN */
+.main{
+  display:grid;
+  grid-template-columns:clamp(185px,19vw,252px) 1fr;
+  gap:clamp(6px,0.9vw,14px);
+  min-height:0;
+}
+
+/* LEFT PANEL */
+.ctrl-card{
+  background:#fff;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:clamp(8px,1vw,14px);
+  padding:clamp(10px,1.1vw,16px);
+  display:flex;
+  flex-direction:column;
+  gap:clamp(7px,0.85vw,12px);
+  overflow:hidden;
+}
+.clabel{font-size:clamp(11px,1.1vw,15px);color:#5f5e5a;margin-bottom:2px}
+.ss-divider{border:none;border-top:1px dashed rgba(0,0,0,0.1);margin:0}
+
+/* Input row: typed number + optional slider */
+.input-row{display:flex;align-items:center;gap:6px}
+.input-row input[type=number]{
+  width:clamp(72px,7vw,96px);
+  padding:5px 7px;
+  font-size:clamp(12px,1.15vw,15px);
+  font-weight:600;
+  color:#1a1a18;
+  background:#f1efe8;
+  border:1px solid rgba(0,0,0,0.12);
+  border-radius:6px;
+  text-align:right;
+  -moz-appearance:textfield;
+}
+.input-row input[type=number]::-webkit-inner-spin-button,
+.input-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+.input-row input[type=number]:focus{outline:none;border-color:#378add;background:#fff}
+.input-row input[type=range]{flex:1;accent-color:#378add;min-width:0}
+
+.fbox{
+  background:#f1efe8;border-radius:8px;
+  padding:clamp(7px,0.9vw,11px);
+  font-size:clamp(11px,1.1vw,14px);
+  color:#5f5e5a;line-height:1.95;
+}
+.fbox b{color:#1a1a18;font-weight:700}
+.fbox .ss-line{color:#3c3489}
+.hint{font-size:clamp(10px,0.95vw,13px);color:#888780;line-height:1.5}
+.hint span{color:#ba7517;font-weight:700}
+
+/* Legend */
+.leg{display:flex;flex-direction:column;gap:clamp(4px,0.55vw,8px);margin-top:auto;padding-top:6px;border-top:1px solid rgba(0,0,0,0.06)}
+.li{display:flex;align-items:center;gap:8px;font-size:clamp(11px,1.1vw,14px);color:#5f5e5a}
+.ld-solid{width:20px;height:3px;border-radius:2px;flex-shrink:0}
+.ld-dash{width:20px;flex-shrink:0;border-top:3px dashed;height:0;margin:2px 0}
+.ld-dot2{width:13px;height:13px;border-radius:50%;flex-shrink:0;border:2px solid #fff;outline:1px solid rgba(0,0,0,0.15)}
+
+/* CHART COLUMN */
+.chart-col{display:flex;flex-direction:column;min-height:0;gap:6px}
+.banner{
+  display:none;background:#faeeda;border:1px solid #ef9f27;
+  border-radius:8px;
+  padding:clamp(6px,0.8vw,11px) clamp(9px,1vw,15px);
+  font-size:clamp(11px,1.1vw,15px);color:#633806;line-height:1.5;flex-shrink:0;
+}
+.banner.on{display:block}
+.svg-wrap{flex:1;min-height:0;touch-action:none;position:relative}
+.svg-wrap svg{display:block;width:100%;height:100%}
+
+@media (prefers-color-scheme:dark){
+  html,body{background:#1a1a18;color:#f1efe8}
+  .mc{background:#2c2c2a}
+  .ml,.clabel{color:#888780}
+  .mv,.fbox b{color:#f1efe8}
+  .ctrl-card{background:#2c2c2a;border-color:rgba(255,255,255,0.08)}
+  .fbox{background:#2c2c2a;color:#888780}
+  .hint{color:#5f5e5a}
+  .li{color:#888780}
+  .leg{border-top-color:rgba(255,255,255,0.07)}
+  .ss-divider{border-top-color:rgba(255,255,255,0.1)}
+  .input-row input[type=number]{background:#1a1a18;color:#f1efe8;border-color:rgba(255,255,255,0.15)}
+  .input-row input[type=number]:focus{background:#2c2c2a;border-color:#378add}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP METRICS (6 cards) -->
+<div class="metrics">
+  <div class="mc"><div class="ml">Your Q</div><div class="mv" id="mq">200</div></div>
+  <div class="mc"><div class="ml">EOQ (optimal)</div><div class="mv ok" id="meoq">200</div></div>
+  <div class="mc"><div class="ml">Extra cost / yr</div><div class="mv ok" id="mpen">$0</div></div>
+  <div class="cc hold">
+    <div class="cl">Holding cost at Q</div>
+    <div class="cv" id="chc">$500</div>
+    <div class="cl" style="font-size:clamp(9px,0.85vw,11px);margin-top:2px">(Q/2) × H</div>
+  </div>
+  <div class="cc ord">
+    <div class="cl">Ordering cost at Q</div>
+    <div class="cv" id="coc">$500</div>
+    <div class="cl" style="font-size:clamp(9px,0.85vw,11px);margin-top:2px">(D/Q) × S</div>
+  </div>
+  <div class="cc ss">
+    <div class="cl">TC w/ Safety Stock</div>
+    <div class="cv" id="css">$500</div>
+    <div class="cl" style="font-size:clamp(9px,0.85vw,11px);margin-top:2px">TC + SS×H</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="ctrl-card">
+
+    <!-- D -->
+    <div>
+      <div class="clabel">Annual demand D (units/yr)</div>
+      <div class="input-row">
+        <input type="range" id="slD" min="100" max="5000" step="50" value="1000" oninput="syncFromSlider('D')">
+        <input type="number" id="nD" min="1" max="99999" step="1" value="1000" onchange="syncFromNumber('D')" oninput="syncFromNumber('D')">
+      </div>
+    </div>
+
+    <!-- H -->
+    <div>
+      <div class="clabel">Holding cost H ($/unit/yr)</div>
+      <div class="input-row">
+        <input type="range" id="slH" min="0.01" max="50" step="0.01" value="5" oninput="syncFromSlider('H')">
+        <input type="number" id="nH" min="0.01" max="9999" step="0.01" value="5.00" onchange="syncFromNumber('H')" oninput="syncFromNumber('H')">
+      </div>
+    </div>
+
+    <!-- S -->
+    <div>
+      <div class="clabel">Ordering cost S ($/order)</div>
+      <div class="input-row">
+        <input type="range" id="slS" min="1" max="500" step="0.01" value="100" oninput="syncFromSlider('S')">
+        <input type="number" id="nS" min="0.01" max="99999" step="0.01" value="100.00" onchange="syncFromNumber('S')" oninput="syncFromNumber('S')">
+      </div>
+    </div>
+
+    <hr class="ss-divider"/>
+
+    <!-- Safety Stock -->
+    <div>
+      <div class="clabel">Safety stock SS (units)</div>
+      <div class="input-row">
+        <input type="range" id="slSS" min="0" max="500" step="0.001" value="0" oninput="syncFromSlider('SS')">
+        <input type="number" id="nSS" min="0" max="99999" step="0.001" value="0.000" onchange="syncFromNumber('SS')" oninput="syncFromNumber('SS')">
+      </div>
+    </div>
+
+    <!-- Formula box -->
+    <div class="fbox">
+      TC = (Q/2)·H + (D/Q)·S<br>
+      <span class="ss-line">TC<sub>SS</sub> = TC + SS·H</span><br>
+      EOQ = √(2DS/H)<br>
+      EOQ = <b id="feoq">200</b> units<br>
+      Min TC = <b id="ftc">$1,000</b>
+    </div>
+
+    <div class="hint">Drag the <span>orange dot</span> along the curve to see cost change as Q deviates from EOQ.</div>
+
+    <!-- Legend -->
+    <div class="leg">
+      <div class="li"><div class="ld-solid" style="background:#378add"></div>Total cost</div>
+      <div class="li"><div class="ld-solid" style="background:#7f77dd"></div>TC w/ Safety Stock</div>
+      <div class="li"><div class="ld-dash"  style="border-color:#d85a30"></div>Holding cost</div>
+      <div class="li"><div class="ld-dash"  style="border-color:#1d9e75"></div>Ordering cost</div>
+      <div class="li"><div class="ld-dot2" style="background:#ba7517"></div>Your Q (draggable)</div>
+    </div>
+  </div>
+
+  <div class="chart-col">
+    <div class="banner" id="banner"></div>
+    <div class="svg-wrap" id="svgWrap"></div>
+  </div>
+</div>
+
+<script>
+let userQ = 200, dragging = false;
+const VW = 720, VH = 430;
+const PAD = {l:90, r:106, t:26, b:48};
+const CW  = VW - PAD.l - PAD.r;
+const CH  = VH - PAD.t - PAD.b;
+
+const $    = id => document.getElementById(id);
+const eoqF = (D,H,S) => Math.sqrt(2*D*S/H);
+const tcF  = (q,D,H,S) => (q/2)*H + (D/q)*S;
+const tcsF = (q,D,H,S,SS) => tcF(q,D,H,S) + SS*H;
+const hcF  = (q,H) => (q/2)*H;
+const ocF  = (q,D,S) => (D/q)*S;
+const fmt  = v => '$' + Math.round(v).toLocaleString();
+const fmtD = (v,d) => '$' + v.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const fx   = v => v.toFixed(1);
+
+function Pr() {
+  return {
+    D:  Math.max(1,   parseFloat($('nD').value)  || 1000),
+    H:  Math.max(0.01,parseFloat($('nH').value)  || 5),
+    S:  Math.max(0.01,parseFloat($('nS').value)  || 100),
+    SS: Math.max(0,   parseFloat($('nSS').value) || 0),
+  };
+}
+
+// Keep slider and number input in sync
+function syncFromSlider(id) {
+  const sl = $('sl'+id), nm = $('n'+id);
+  nm.value = parseFloat(sl.value).toFixed(id==='D'?0:id==='SS'?3:2);
+  redraw();
+}
+function syncFromNumber(id) {
+  const sl = $('sl'+id), nm = $('n'+id);
+  let v = parseFloat(nm.value);
+  if (isNaN(v)) return;
+  // clamp to slider range
+  v = Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), v));
+  sl.value = v;
+  redraw();
+}
+
+function redraw() {
+  const {D,H,S,SS} = Pr();
+  const eq   = eoqF(D,H,S);
+  const qMin = eq * 0.18, qMax = eq * 3.2;
+  userQ = Math.max(qMin, Math.min(qMax, userQ));
+
+  const tcMin  = tcF(eq,D,H,S);
+  const tcsMin = tcsF(eq,D,H,S,SS);
+  // yMax must accommodate both TC and TC+SS curves
+  const yMaxTC  = tcF(qMin,D,H,S);
+  const yMaxTCS = tcsF(qMin,D,H,S,SS);
+  const yMax = Math.max(yMaxTC, yMaxTCS) * 1.10;
+  const yMin = 0;
+
+  const xp = q => PAD.l + ((q-qMin)/(qMax-qMin))*CW;
+  const yp = v => PAD.t + CH*(1-(v-yMin)/(yMax-yMin));
+
+  const N = 200;
+  let tcP='', hcP='', ocP='', tcsP='';
+  for (let i=0; i<=N; i++) {
+    const q   = qMin + (qMax-qMin)*i/N;
+    const pre = i===0 ? 'M' : 'L';
+    tcP  += pre + fx(xp(q)) + ',' + fx(yp(tcF(q,D,H,S)))      + ' ';
+    tcsP += pre + fx(xp(q)) + ',' + fx(yp(tcsF(q,D,H,S,SS)))  + ' ';
+    hcP  += pre + fx(xp(q)) + ',' + fx(yp(hcF(q,H)))          + ' ';
+    ocP  += pre + fx(xp(q)) + ',' + fx(yp(ocF(q,D,S)))        + ' ';
+  }
+
+  const xE  = xp(eq),    yE  = yp(tcMin);
+  const xU  = xp(userQ), yU  = yp(tcF(userQ,D,H,S));
+  const yUS = yp(tcsF(userQ,D,H,S,SS));
+  const tcU      = tcF(userQ,D,H,S);
+  const tcUS     = tcsF(userQ,D,H,S,SS);
+  const penalty  = tcU - tcMin;
+  const pct      = ((tcU/tcMin)-1)*100;
+  const hasSSCost = SS > 0;
+
+  const dark = matchMedia('(prefers-color-scheme:dark)').matches;
+  const axC  = dark ? 'rgba(180,178,169,0.35)' : 'rgba(136,135,128,0.3)';
+  const grC  = dark ? 'rgba(136,135,128,0.1)'  : 'rgba(136,135,128,0.1)';
+  const txC  = dark ? '#aaa9a3' : '#888780';
+
+  // Grid
+  let grid = '';
+  for (let i=0; i<=6; i++) {
+    const q = qMin+(qMax-qMin)*i/6, x = xp(q);
+    grid += `<line x1="${fx(x)}" y1="${PAD.t}" x2="${fx(x)}" y2="${fx(PAD.t+CH)}" stroke="${grC}" stroke-width="0.6"/>`;
+    grid += `<text x="${fx(x)}" y="${fx(PAD.t+CH+20)}" text-anchor="middle" font-size="12" fill="${txC}">${Math.round(q)}</text>`;
+  }
+  for (let i=0; i<=5; i++) {
+    const v = yMin+(yMax-yMin)*i/5, y = yp(v);
+    grid += `<line x1="${PAD.l}" y1="${fx(y)}" x2="${fx(VW-PAD.r)}" y2="${fx(y)}" stroke="${grC}" stroke-width="0.6"/>`;
+  }
+
+  // Y-axis custom labels
+  let yLbls = '';
+  yLbls += `<text x="${PAD.l-7}" y="${fx(yp(0)+4)}" text-anchor="end" font-size="12" fill="${txC}">$0</text>`;
+  yLbls += `<text x="${PAD.l-7}" y="${fx(yE+4)}" text-anchor="end" font-size="12" fill="#185fa5" font-weight="700">${fmt(tcMin)}</text>`;
+  if (penalty > tcMin*0.015) {
+    yLbls += `<text x="${PAD.l-7}" y="${fx(yU+4)}" text-anchor="end" font-size="12" fill="#ba7517" font-weight="700">${fmt(tcU)}</text>`;
+  }
+  if (hasSSCost) {
+    const yEss = yp(tcsMin);
+    yLbls += `<text x="${PAD.l-7}" y="${fx(yEss+4)}" text-anchor="end" font-size="12" fill="#534ab7" font-weight="700">${fmt(tcsMin)}</text>`;
+  }
+
+  // Horizontal reference lines
+  const hlineEOQ = `<line x1="${PAD.l}" y1="${fx(yE)}" x2="${fx(xE)}" y2="${fx(yE)}" stroke="#378add" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.5"/>`;
+  const hlineU   = penalty > tcMin*0.015
+    ? `<line x1="${PAD.l}" y1="${fx(yU)}" x2="${fx(xU)}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.6"/>`
+    : '';
+  // SS horizontal line at userQ
+  const hlineUS = hasSSCost
+    ? `<line x1="${PAD.l}" y1="${fx(yUS)}" x2="${fx(xU)}" y2="${fx(yUS)}" stroke="#7f77dd" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.6"/>`
+    : '';
+
+  // Penalty bracket
+  let penBracket = '';
+  if (penalty > tcMin*0.015) {
+    const bx = PAD.l - 54, tk = 6, mid = (yE+yU)/2;
+    penBracket = `
+      <line x1="${bx}" y1="${fx(yE)}" x2="${bx}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="2"/>
+      <line x1="${bx}" y1="${fx(yE)}" x2="${bx+tk}" y2="${fx(yE)}" stroke="#ba7517" stroke-width="2"/>
+      <line x1="${bx}" y1="${fx(yU)}" x2="${bx+tk}" y2="${fx(yU)}" stroke="#ba7517" stroke-width="2"/>
+      <text x="${bx-4}" y="${fx(mid+4)}" text-anchor="end" font-size="11.5" fill="#854f0b" font-weight="700">+${fmt(penalty)}</text>`;
+  }
+
+  // Shade between TC and userQ point
+  const shade = penalty > 0.5
+    ? `<rect x="${fx(Math.min(xE,xU))}" y="${fx(yU)}" width="${fx(Math.abs(xU-xE))}" height="${fx(yE-yU)}" fill="rgba(186,117,23,0.09)"/>`
+    : '';
+
+  // EOQ vertical line
+  const eoqVline = `<line x1="${fx(xE)}" y1="${PAD.t}" x2="${fx(xE)}" y2="${fx(PAD.t+CH)}" stroke="#378add" stroke-width="1" stroke-dasharray="5,3" opacity="0.3"/>`;
+
+  // Gap line HC vs OC at userQ
+  const yHU = yp(hcF(userQ,H)), yOU = yp(ocF(userQ,D,S));
+  const gapLine = Math.abs(yHU-yOU) > 5
+    ? `<line x1="${fx(xU)}" y1="${fx(yHU)}" x2="${fx(xU)}" y2="${fx(yOU)}" stroke="#ba7517" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.7"/>`
+    : '';
+
+  // Inline labels at right of curves
+  const qR   = qMax * 0.96;
+  const xLbl = fx(VW - PAD.r + 6);
+  // SS label only if SS>0, and offset to avoid overlap with TC label
+  const yTC_lbl  = yp(tcF(qR,D,H,S));
+  const yTCS_lbl = yp(tcsF(qR,D,H,S,SS));
+  const inlineLbls = `
+    <text x="${xLbl}" y="${fx(yTC_lbl+4)}"            font-size="12" fill="#185fa5" font-weight="700">Total cost</text>
+    ${hasSSCost ? `<text x="${xLbl}" y="${fx(yTCS_lbl+4)}" font-size="12" fill="#534ab7" font-weight="700">TC+SS</text>` : ''}
+    <text x="${xLbl}" y="${fx(yp(hcF(qR,H))+4)}"      font-size="12" fill="#b83c18" font-weight="700">Holding</text>
+    <text x="${xLbl}" y="${fx(yp(ocF(qR,D,S))+4)}"    font-size="12" fill="#0a7a57" font-weight="700">Ordering</text>
+  `;
+
+  // EOQ label
+  const eoqLbl = `<text x="${fx(xE+7)}" y="${fx(yE-12)}" font-size="12.5" fill="#185fa5" font-weight="700">EOQ = ${Math.round(eq)}</text>`;
+
+  // Axis labels
+  const axLbls = `
+    <text x="${fx(PAD.l+CW/2)}" y="${fx(VH-7)}" text-anchor="middle" font-size="13" fill="${txC}" font-weight="600">Order quantity (Q)</text>
+    <text x="14" y="${fx(PAD.t+CH/2)}" text-anchor="middle" font-size="13" fill="${txC}" font-weight="600" transform="rotate(-90,14,${PAD.t+CH/2})">Cost ($)</text>
+  `;
+
+  // Dot on SS curve at userQ
+  const ssDot = hasSSCost
+    ? `<circle cx="${fx(xU)}" cy="${fx(yUS)}" r="6" fill="#7f77dd" stroke="#fff" stroke-width="2"/>`
+    : '';
+
+  $('svgWrap').innerHTML = `<svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%">
+<rect x="${PAD.l}" y="${PAD.t}" width="${CW}" height="${CH}" fill="none" stroke="${axC}" stroke-width="0.8"/>
+${grid}${shade}${eoqVline}${hlineEOQ}${hlineU}${hlineUS}${penBracket}
+<path d="${hcP}"  fill="none" stroke="#d85a30" stroke-width="2.2" stroke-dasharray="7,4"/>
+<path d="${ocP}"  fill="none" stroke="#1d9e75" stroke-width="2.2" stroke-dasharray="7,4"/>
+<path d="${tcP}"  fill="none" stroke="#378add" stroke-width="3"/>
+${hasSSCost ? `<path d="${tcsP}" fill="none" stroke="#7f77dd" stroke-width="2.5" stroke-dasharray="9,3"/>` : ''}
+${gapLine}
+<circle cx="${fx(xE)}" cy="${fx(yE)}" r="6" fill="#378add" stroke="#fff" stroke-width="2"/>
+${eoqLbl}
+${ssDot}
+<circle cx="${fx(xU)}" cy="${fx(yU)}" r="10" fill="#ba7517" stroke="#fff" stroke-width="2.5" id="dragDot" style="cursor:grab"/>
+${yLbls}${inlineLbls}${axLbls}
+</svg>`;
+
+  // Update top metrics
+  $('mq').textContent   = Math.round(userQ).toLocaleString();
+  $('meoq').textContent = Math.round(eq).toLocaleString();
+  $('chc').textContent  = fmt(hcF(userQ,H));
+  $('coc').textContent  = fmt(ocF(userQ,D,S));
+  $('css').textContent  = fmt(tcUS);
+  $('feoq').textContent = Math.round(eq).toLocaleString();
+  $('ftc').textContent  = fmt(tcMin);
+
+  const penEl = $('mpen');
+  penEl.textContent = fmt(penalty);
+  penEl.className   = 'mv' + (penalty > 0.5 ? ' warn' : ' ok');
+
+  const ban = $('banner');
+  if (penalty > 0.5) {
+    const side = userQ > eq ? 'Holding cost dominates — too much inventory.' : 'Ordering cost dominates — too many small orders.';
+    ban.className = 'banner on';
+    ban.innerHTML = `Q = <b>${Math.round(userQ).toLocaleString()}</b> vs EOQ = <b>${Math.round(eq).toLocaleString()}</b> → extra <b>${fmt(penalty)}/yr</b> (${pct.toFixed(1)}% above minimum). ${side}`;
+  } else {
+    ban.className = 'banner';
+  }
+
+  const dot = document.getElementById('dragDot');
+  if (dot) {
+    dot.addEventListener('mousedown', onDown);
+    dot.addEventListener('touchstart', onDown, {passive:false});
+  }
+}
+
+function svgXtoQ(clientX) {
+  const rect = $('svgWrap').getBoundingClientRect();
+  const frac = (clientX - rect.left) / rect.width;
+  const {D,H,S} = Pr();
+  const eq = eoqF(D,H,S);
+  const qMin = eq*0.18, qMax = eq*3.2;
+  return Math.max(qMin, Math.min(qMax, qMin + ((frac*VW - PAD.l)/CW)*(qMax-qMin)));
+}
+function onDown(e){
+  e.preventDefault(); dragging=true;
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onUp);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend',  onUp);
+}
+function onMove(e){
+  if(!dragging) return;
+  e.preventDefault();
+  userQ = svgXtoQ(e.touches ? e.touches[0].clientX : e.clientX);
+  redraw();
+}
+function onUp(){
+  dragging=false;
+  document.removeEventListener('mousemove', onMove);
+  document.removeEventListener('mouseup',   onUp);
+  document.removeEventListener('touchmove', onMove);
+  document.removeEventListener('touchend',  onUp);
+}
+
+redraw();
+</script>
+</body>
+</html>
