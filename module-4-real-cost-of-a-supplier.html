@@ -1,1195 +1,145 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="An interactive sourcing activity comparing purchase price, total landed cost, total cost of ownership, and supplier risk.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Real Cost of a Supplier</title>
+  <meta name="description" content="An interactive sourcing activity comparing purchase price, landed cost, and total cost of ownership across three fictional suppliers.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23174f78'/%3E%3Cpath d='M15 17h34v30H15z' fill='white'/%3E%3Cpath d='M20 22h19v18H20z' fill='%232f6f9f'/%3E%3Ccircle cx='44' cy='25' r='2' fill='%23116f84'/%3E%3Ccircle cx='44' cy='32' r='2' fill='%23116f84'/%3E%3Ccircle cx='44' cy='39' r='2' fill='%23116f84'/%3E%3C/svg%3E">
   <style>
-    :root {
-      --navy: #174f78;
-      --blue: #2f6f9f;
-      --teal: #116f84;
-      --green: #217346;
-      --gold: #c58a19;
-      --red: #8b1e2d;
-      --ink: #1f2933;
-      --muted: #52606d;
-      --line: #b7c9dd;
-      --pale-blue: #e8f1f7;
-      --pale-teal: #e5f1ef;
-      --surface: #ffffff;
-      --canvas: #f3f7fa;
-      --shadow: 0 12px 30px rgba(23, 79, 120, 0.11);
-    }
-
-    * { box-sizing: border-box; }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      margin: 0;
-      background: var(--canvas);
-      color: var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 16px;
-      line-height: 1.55;
-    }
-
-    button, input, select, textarea { font: inherit; }
-
-    button, select, input[type="range"], input[type="checkbox"] { cursor: pointer; }
-
-    button:focus-visible,
-    input:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible,
-    summary:focus-visible {
-      outline: 3px solid #f3bf42;
-      outline-offset: 3px;
-    }
-
-    .app {
-      width: min(1180px, calc(100% - 28px));
-      margin: 18px auto 36px;
-    }
-
-    .hero {
-      position: relative;
-      overflow: hidden;
-      padding: clamp(22px, 4vw, 38px);
-      background: linear-gradient(125deg, #123f61 0%, var(--navy) 56%, var(--teal) 100%);
-      border-radius: 14px;
-      color: #ffffff;
-      box-shadow: var(--shadow);
-    }
-
-    .hero::after {
-      content: "$";
-      position: absolute;
-      right: 24px;
-      bottom: -56px;
-      color: rgba(255,255,255,.08);
-      font-size: 220px;
-      font-weight: 800;
-      line-height: 1;
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      margin: 0 0 6px;
-      color: #c9e4f3;
-      font-size: .78rem;
-      font-weight: 700;
-      letter-spacing: .09em;
-      text-transform: uppercase;
-    }
-
-    h1, h2, h3 { line-height: 1.25; }
-
-    h1 {
-      position: relative;
-      z-index: 1;
-      max-width: 760px;
-      margin: 0;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-    }
-
-    .hero-copy {
-      position: relative;
-      z-index: 1;
-      max-width: 800px;
-      margin: 10px 0 0;
-      color: #f2f7fa;
-      font-size: 1.05rem;
-    }
-
-    .scenario-strip {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 22px;
-    }
-
-    .scenario-fact {
-      padding: 11px 13px;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.24);
-      border-radius: 8px;
-    }
-
-    .scenario-fact span {
-      display: block;
-      color: #cae4f1;
-      font-size: .76rem;
-      font-weight: 700;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-    }
-
-    .scenario-fact strong { display: block; margin-top: 2px; }
-
-    .progress-card,
-    .round,
-    .methodology {
-      margin-top: 16px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: 0 7px 20px rgba(23,79,120,.06);
-    }
-
-    .progress-card { padding: 16px 18px; }
-
-    .progress-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .progress-heading strong { color: var(--navy); }
-    .progress-heading span { color: var(--muted); font-size: .88rem; }
-
-    .progress-list {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .progress-step {
-      min-height: 54px;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 10px;
-      background: #edf2f5;
-      border: 1px solid #d2dde5;
-      border-radius: 7px;
-      color: #4f5f69;
-      font-size: .84rem;
-      font-weight: 700;
-    }
-
-    .progress-step .number {
-      flex: 0 0 27px;
-      width: 27px;
-      height: 27px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      background: #d7e1e7;
-      color: #40525f;
-    }
-
-    .progress-step.active {
-      background: var(--pale-blue);
-      border-color: #7fa4bf;
-      color: var(--navy);
-    }
-
-    .progress-step.active .number { background: var(--navy); color: #ffffff; }
-
-    .progress-step.complete {
-      background: #e7f2eb;
-      border-color: #9cc3aa;
-      color: #185c37;
-    }
-
-    .progress-step.complete .number { background: var(--green); color: #ffffff; }
-
-    .round { overflow: hidden; }
-
-    .round-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 14px;
-      padding: 20px 22px 16px;
-      background: linear-gradient(90deg, #edf4f8, #ffffff);
-      border-bottom: 1px solid #d5e0e8;
-    }
-
-    .round-number {
-      margin: 0 0 4px;
-      color: var(--blue);
-      font-size: .76rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .round h2 { margin: 0; color: var(--navy); font-size: clamp(1.35rem, 3vw, 1.75rem); }
-
-    .round-intro { margin: 6px 0 0; color: var(--muted); }
-
-    .metric-badge {
-      flex: 0 0 auto;
-      padding: 5px 10px;
-      background: var(--navy);
-      color: #ffffff;
-      border-radius: 999px;
-      font-size: .78rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .round-body { padding: 20px 22px 22px; }
-
-    .supplier-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .supplier-card {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      padding: 16px;
-      background: #ffffff;
-      border: 2px solid #c9d6df;
-      border-radius: 10px;
-    }
-
-    .supplier-card.selected {
-      border-color: var(--blue);
-      box-shadow: inset 0 0 0 2px #d8eaf5;
-    }
-
-    .supplier-card h3 { margin: 0; color: var(--navy); font-size: 1.12rem; }
-
-    .supplier-type {
-      display: inline-block;
-      align-self: flex-start;
-      margin: 5px 0 12px;
-      padding: 3px 8px;
-      background: #edf2f5;
-      border-radius: 999px;
-      color: #536572;
-      font-size: .76rem;
-      font-weight: 700;
-    }
-
-    .price {
-      margin: auto 0 2px;
-      color: var(--ink);
-      font-size: 1.6rem;
-      font-weight: 800;
-    }
-
-    .price-note { margin: 0 0 12px; color: var(--muted); font-size: .82rem; }
-
-    .choose-button,
-    .primary-button,
-    .secondary-button,
-    .copy-button {
-      min-height: 43px;
-      border-radius: 6px;
-      font-weight: 700;
-    }
-
-    .choose-button {
-      width: 100%;
-      padding: 9px 12px;
-      background: #ffffff;
-      color: var(--navy);
-      border: 2px solid var(--blue);
-    }
-
-    .choose-button:hover,
-    .choose-button[aria-pressed="true"] { background: var(--navy); color: #ffffff; }
-
-    .feedback {
-      min-height: 55px;
-      margin-top: 14px;
-      padding: 12px 14px;
-      background: #fff8e8;
-      border-left: 5px solid var(--gold);
-      border-radius: 6px;
-      color: #47391f;
-    }
-
-    .feedback.success {
-      background: #e7f2eb;
-      border-left-color: var(--green);
-      color: #174d31;
-    }
-
-    .action-row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .primary-button {
-      padding: 10px 16px;
-      background: var(--navy);
-      color: #ffffff;
-      border: 2px solid var(--navy);
-    }
-
-    .primary-button:hover { background: #0f3f62; }
-
-    .primary-button:disabled {
-      background: #b6c1c8;
-      border-color: #b6c1c8;
-      color: #ffffff;
-      cursor: not-allowed;
-    }
-
-    .secondary-button,
-    .copy-button {
-      padding: 9px 14px;
-      background: #ffffff;
-      color: var(--navy);
-      border: 2px solid var(--blue);
-    }
-
-    .secondary-button:hover,
-    .copy-button:hover { background: var(--pale-blue); }
-
-    .table-wrap { width: 100%; overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: .91rem;
-    }
-
-    caption {
-      padding: 0 0 9px;
-      color: var(--navy);
-      font-weight: 700;
-      text-align: left;
-    }
-
-    th, td {
-      padding: 10px 11px;
-      border: 1px solid #cfdbe4;
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    th { background: #edf4f8; color: var(--navy); }
-    th:first-child, td:first-child { text-align: left; }
-    tbody tr:nth-child(even) td { background: #f8fafb; }
-    .winner-cell { background: #e7f2eb !important; color: #185c37; font-weight: 800; }
-
-    .definition {
-      margin: 0 0 14px;
-      padding: 11px 13px;
-      background: var(--pale-blue);
-      border-left: 5px solid var(--blue);
-      border-radius: 6px;
-    }
-
-    .chart {
-      display: grid;
-      gap: 10px;
-      margin-top: 16px;
-      padding: 15px;
-      background: #f8fafb;
-      border: 1px solid #d4dfe7;
-      border-radius: 8px;
-    }
-
-    .bar-row {
-      display: grid;
-      grid-template-columns: 140px minmax(120px, 1fr) 110px;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .bar-name { color: var(--navy); font-weight: 700; }
-
-    .bar-track {
-      height: 24px;
-      overflow: hidden;
-      background: #dde6ec;
-      border-radius: 4px;
-    }
-
-    .bar-fill {
-      height: 100%;
-      min-width: 2px;
-      background: linear-gradient(90deg, var(--blue), var(--teal));
-      border-radius: 4px;
-      transition: width .25s ease;
-    }
-
-    .bar-fill.winner { background: linear-gradient(90deg, #217346, #3e9364); }
-    .bar-value { text-align: right; font-weight: 700; }
-
-    .factor-note {
-      margin: 14px 0 0;
-      color: var(--muted);
-      font-size: .88rem;
-    }
-
-    .control-layout {
-      display: grid;
-      grid-template-columns: minmax(270px, .82fr) minmax(390px, 1.45fr);
-      gap: 16px;
-      align-items: start;
-    }
-
-    .controls {
-      padding: 16px;
-      background: #f3f7fa;
-      border: 1px solid #cbdbe6;
-      border-radius: 9px;
-    }
-
-    .controls h3, .results-panel h3, .decision-panel h3 {
-      margin: 0 0 5px;
-      color: var(--navy);
-    }
-
-    .controls-intro { margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
-
-    .control {
-      padding: 11px 0;
-      border-top: 1px solid #d6e0e7;
-    }
-
-    .control:first-of-type { border-top: 0; padding-top: 0; }
-
-    .control label {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      color: #273f4e;
-      font-size: .88rem;
-      font-weight: 700;
-    }
-
-    .control output { color: var(--navy); white-space: nowrap; }
-    input[type="range"] { width: 100%; margin: 8px 0 0; accent-color: var(--teal); }
-
-    .results-panel {
-      min-width: 0;
-      padding: 16px;
-      background: #ffffff;
-      border: 1px solid #cbdbe6;
-      border-radius: 9px;
-    }
-
-    .winner-callout {
-      margin: 12px 0 14px;
-      padding: 12px 14px;
-      background: #e7f2eb;
-      border-left: 5px solid var(--green);
-      border-radius: 6px;
-      color: #174d31;
-    }
-
-    .decision-history {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .history-item {
-      padding: 10px;
-      background: #edf4f8;
-      border-radius: 6px;
-      text-align: center;
-    }
-
-    .history-item span { display: block; color: var(--muted); font-size: .76rem; }
-    .history-item strong { color: var(--navy); }
-
-    .decision-panel {
-      margin-top: 18px;
-      padding: 18px;
-      background: #f8fafb;
-      border: 1px solid #cbdbe6;
-      border-radius: 9px;
-    }
-
-    .decision-grid {
-      display: grid;
-      grid-template-columns: .72fr 1.28fr;
-      gap: 16px;
-      margin-top: 13px;
-    }
-
-    fieldset {
-      margin: 0;
-      padding: 13px;
-      border: 1px solid #c7d4dd;
-      border-radius: 7px;
-    }
-
-    legend { padding: 0 5px; color: var(--navy); font-weight: 700; }
-
-    select, textarea {
-      width: 100%;
-      padding: 10px;
-      background: #ffffff;
-      color: var(--ink);
-      border: 1px solid #8ea5b5;
-      border-radius: 5px;
-    }
-
-    .checkbox-list { display: grid; gap: 8px; }
-
-    .checkbox-list label {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .checkbox-list input { flex: 0 0 auto; margin-top: 4px; accent-color: var(--teal); }
-
-    .decision-note {
-      min-height: 92px;
-      margin-top: 13px;
-      padding: 13px 14px;
-      background: #ffffff;
-      border: 1px dashed #7f9aac;
-      border-radius: 6px;
-    }
-
-    .copy-status { margin-left: 8px; color: var(--green); font-size: .88rem; font-weight: 700; }
-
-    details.methodology { overflow: hidden; }
-
-    details.methodology summary {
-      padding: 14px 17px;
-      background: #e8f1f7;
-      color: var(--navy);
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .methodology-body { padding: 15px 18px 18px; }
-    .methodology-body ul { margin: 8px 0 0; padding-left: 22px; }
-    .methodology-body li { margin-bottom: 6px; }
-
-    .footnote {
-      margin: 14px 4px 0;
-      color: var(--muted);
-      font-size: .82rem;
-      text-align: center;
-    }
-
-    [hidden] { display: none !important; }
-
-    @media (max-width: 820px) {
-      .scenario-strip,
-      .supplier-grid,
-      .progress-list,
-      .control-layout,
-      .decision-grid { grid-template-columns: 1fr; }
-
-      .progress-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .bar-row { grid-template-columns: 105px minmax(90px, 1fr) 95px; }
-    }
-
-    @media (max-width: 520px) {
-      .app { width: min(100% - 16px, 1180px); margin-top: 8px; }
-      .hero, .round-body, .round-header { padding-left: 15px; padding-right: 15px; }
-      .round-header { flex-direction: column; }
-      .progress-list { grid-template-columns: 1fr; }
-      .bar-row { grid-template-columns: 1fr; gap: 4px; }
-      .bar-value { text-align: left; }
-      th, td { padding: 8px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .bar-fill { transition: none; }
-    }
-
-    @media print {
-      body { background: #ffffff; }
-      .app { width: 100%; margin: 0; }
-      .hero { background: #174f78 !important; print-color-adjust: exact; }
-      button, input[type="range"], .progress-card { display: none !important; }
-      [hidden] { display: block !important; }
-      .round, .methodology { box-shadow: none; break-inside: avoid; }
-    }
+    :root{--navy:#174f78;--blue:#2f6f9f;--teal:#116f84;--ink:#1f2933;--muted:#52606d;--line:#b7c9dd;--pale:#eef4f8;--green:#217346;--green-pale:#e7f2eb;--gold:#b7791f;--gold-pale:#fff8e8;--red:#8b1e2d;--shadow:0 5px 18px rgba(23,79,120,.10)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f4f7f9;color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+    button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #f4b942;outline-offset:3px}
+    .app{width:min(1180px,calc(100% - 28px));margin:18px auto 34px}.hero,.progress-card,.round,.methodology{margin-bottom:15px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+    .hero{overflow:hidden;background:linear-gradient(130deg,#123f60 0%,var(--navy) 62%,var(--teal) 100%);color:#fff}.hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr);align-items:center;gap:24px;padding:26px 28px 20px}
+    .eyebrow{margin:0 0 5px;color:#dceaf4;font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}h1{margin:0 0 9px;font-size:clamp(1.8rem,4vw,2.65rem);line-height:1.12}.hero-copy{max-width:720px;margin:0;color:#f4f8fb;font-size:1.02rem}
+    .appliance-figure{margin:0}.appliance-figure svg{display:block;width:100%;height:auto}.appliance-figure figcaption{margin-top:7px;color:#dceaf4;font-size:.76rem;text-align:center}
+    .fun-note{margin:0 28px 22px;padding:12px 14px;background:rgba(255,255,255,.12);border-left:4px solid #f4b942;border-radius:6px;color:#fff}
+    .scenario-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.20);border-top:1px solid rgba(255,255,255,.24)}.scenario-fact{padding:12px 15px;background:rgba(6,39,61,.28);text-align:center}.scenario-fact span{display:block;color:#dceaf4;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase}.scenario-fact strong{display:block;margin-top:2px;color:#fff;font-size:.9rem}
+    .progress-card{padding:14px 17px}.progress-heading{display:flex;justify-content:space-between;gap:12px;color:var(--navy)}.progress-list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:11px 0 0;padding:0;list-style:none}.progress-step{display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:7px;background:#edf2f5;border-radius:6px;color:var(--muted);font-size:.84rem;font-weight:700;text-align:center}.progress-step .number{display:inline-grid;place-items:center;width:23px;height:23px;flex:0 0 23px;background:#fff;border:1px solid #a9bbc7;border-radius:50%}.progress-step.active{background:var(--navy);color:#fff}.progress-step.active .number{color:var(--navy);border-color:#fff}.progress-step.complete{background:#dfeee5;color:#174d31}
+    .round{overflow:hidden;border-left:6px solid var(--blue)}.round-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:17px 20px;background:var(--pale);border-bottom:1px solid #cbdbe6}.round-number{margin:0 0 3px;color:var(--blue);font-size:.71rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}h2{margin:0;color:var(--navy);font-size:clamp(1.3rem,3vw,1.65rem);line-height:1.25}.round-intro{margin:4px 0 0;color:var(--muted);font-size:.93rem}.metric-badge{flex:0 0 auto;padding:5px 10px;background:var(--navy);color:#fff;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}.round-body{padding:19px 20px 21px}
+    .definition{margin:0 0 15px;padding:11px 13px;background:#f7fafc;border-left:4px solid var(--teal);border-radius:5px}
+    .supplier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.supplier-card{display:flex;flex-direction:column;min-width:0;padding:15px;background:#fff;border:1px solid #c4d2dc;border-top:5px solid var(--blue);border-radius:8px;transition:transform .15s ease,box-shadow .15s ease}.supplier-card.selected{border-color:var(--red);box-shadow:0 0 0 3px rgba(139,30,45,.13);transform:translateY(-2px)}.supplier-card h3{margin:0;color:var(--navy);font-size:1.08rem}.supplier-type{color:var(--muted);font-size:.78rem}.price{margin:11px 0 0;color:var(--navy);font-size:1.65rem;font-weight:800;line-height:1}.price-note{margin:4px 0 11px;color:var(--muted);font-size:.76rem}.supplier-facts{display:grid;gap:7px;margin:0 0 13px}.supplier-fact{padding-top:7px;border-top:1px solid #e0e7ec}.supplier-fact span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase}.supplier-fact strong{display:block;color:#273f4e;font-size:.86rem}
+    .choose-button,.primary-button,.secondary-button,.scenario-button{border:0;border-radius:6px;font-weight:700}.choose-button{width:100%;margin-top:auto;padding:9px 10px;background:var(--navy);color:#fff}.choose-button:hover,.primary-button:hover{background:#0f3b59}.primary-button{padding:10px 15px;background:var(--navy);color:#fff}.primary-button:disabled{background:#9aabb6;cursor:not-allowed}.secondary-button{padding:9px 13px;background:#fff;color:var(--navy);border:1px solid var(--blue)}.action-row{display:flex;justify-content:flex-end;gap:10px;margin-top:13px}
+    .feedback{margin-top:13px;padding:11px 13px;background:var(--gold-pale);border-left:4px solid var(--gold);border-radius:5px}.feedback.success{background:var(--green-pale);border-left-color:var(--green);color:#174d31}
+    .table-wrap{width:100%;overflow-x:auto;border:1px solid #c9d5de;border-radius:7px}table{width:100%;min-width:760px;border-collapse:collapse;font-size:.82rem}caption{padding:9px 11px;background:#e8f1f7;color:var(--navy);font-weight:700;text-align:left}th,td{padding:9px 10px;border-bottom:1px solid #dbe3e8;text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}thead th{background:#f6f8fa;color:#274559}tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}.winner-cell{background:#e7f2eb;color:#174d31;font-weight:800}
+    .signal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}.signal-card{padding:13px;background:#f8fafc;border:1px solid #d2dee8;border-radius:7px}.signal-card h3{margin:0 0 7px;color:var(--navy);font-size:.97rem}.signal-card p{margin:4px 0 0;color:var(--muted);font-size:.82rem}.signal-card strong{color:var(--ink)}
+    .scenario-heading{margin:0 0 5px;color:var(--navy)}.scenario-help{margin:0 0 12px;color:var(--muted)}.scenario-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.scenario-button{min-height:82px;padding:10px;background:#edf4f8;color:var(--navy);border:1px solid #aac1d1;text-align:left}.scenario-button span{display:block;margin-top:3px;color:var(--muted);font-size:.72rem;font-weight:400;line-height:1.3}.scenario-button.active{background:var(--navy);color:#fff;border-color:var(--navy)}.scenario-button.active span{color:#e7f1f7}.scenario-note{margin:10px 0 16px;padding:11px 13px;background:#fff8e8;border-left:4px solid var(--gold);border-radius:5px}
+    .control-layout{display:grid;grid-template-columns:minmax(260px,.72fr) minmax(440px,1.4fr);gap:15px;align-items:start}.controls,.results-panel{min-width:0;padding:15px;border:1px solid #cbdbe6;border-radius:8px}.controls{background:#f3f7fa}.results-panel{background:#fff}.controls h3,.results-panel h3{margin:0 0 5px;color:var(--navy)}.controls-intro{margin:0 0 12px;color:var(--muted);font-size:.84rem}.control{padding:10px 0;border-top:1px solid #d6e0e7}.control:first-of-type{border-top:0}.control label{display:flex;justify-content:space-between;gap:10px;color:#273f4e;font-size:.82rem;font-weight:700}.control output{color:var(--navy);white-space:nowrap}input[type="range"]{width:100%;margin:8px 0 0;accent-color:var(--teal)}
+    .winner-callout{margin:11px 0 13px;padding:12px 14px;background:var(--green-pale);border-left:5px solid var(--green);border-radius:6px;color:#174d31}.leader-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.leader{padding:9px;background:#edf4f8;border-radius:6px;text-align:center}.leader span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase}.leader strong{display:block;margin-top:2px;color:var(--navy);font-size:.82rem}.history{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.history-item{padding:9px;background:#f4f7f9;border-radius:6px;text-align:center}.history-item span{display:block;color:var(--muted);font-size:.69rem}.history-item strong{color:var(--navy);font-size:.84rem}
+    .assumption-details{margin-top:15px;border:1px solid #b7c9dd;border-radius:8px;overflow:hidden}.assumption-details>summary{padding:12px 14px;background:#e8f1f7;color:var(--navy);font-weight:700;cursor:pointer}.assumption-body{padding:14px}.assumption-intro{margin:0 0 12px;color:var(--muted);font-size:.86rem}.supplier-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.supplier-controls{min-width:0;padding:12px;background:#f8fafc;border:1px solid #d2dee8;border-radius:7px}.supplier-controls h4{margin:0 0 2px;color:var(--navy)}.supplier-controls>p{margin:0 0 10px;color:var(--muted);font-size:.74rem}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field label{display:block;color:#3d5362;font-size:.69rem;font-weight:700}.field input{width:100%;margin-top:3px;padding:7px;border:1px solid #9db0bd;border-radius:4px;color:var(--ink)}
+    .takeaway{margin-top:16px;padding:14px 16px;background:#e8f1f7;border-left:5px solid var(--teal);border-radius:6px}.takeaway h3{margin:0 0 3px;color:var(--navy)}.takeaway p{margin:0}details.methodology{overflow:hidden}details.methodology summary{padding:14px 17px;background:#e8f1f7;color:var(--navy);font-weight:700;cursor:pointer}.methodology-body{padding:15px 18px 18px}.methodology-body ul{margin:8px 0 0;padding-left:22px}.methodology-body li{margin-bottom:6px}.footnote{margin:13px 4px 0;color:var(--muted);font-size:.78rem;text-align:center}[hidden]{display:none!important}
+    @media(max-width:920px){.hero-grid,.control-layout{grid-template-columns:1fr}.appliance-figure{max-width:480px;margin:0 auto}.scenario-strip,.supplier-grid,.signal-grid,.supplier-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:620px){.app{width:min(100% - 16px,1180px);margin-top:8px}.hero-grid,.round-header,.round-body{padding-left:15px;padding-right:15px}.fun-note{margin-left:15px;margin-right:15px}.scenario-strip,.supplier-grid,.signal-grid,.supplier-control-grid,.scenario-grid,.leader-grid,.history{grid-template-columns:1fr}.progress-list{grid-template-columns:repeat(2,1fr)}.round-header{flex-direction:column}.field-grid{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.supplier-card{transition:none}}
+    @media print{body{background:#fff}.app{width:100%;margin:0}.hero{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}button,input[type="range"],.progress-card,.assumption-details{display:none!important}[hidden]{display:block!important}.round,.methodology{box-shadow:none;break-inside:avoid}}
   </style>
 </head>
 <body>
   <main class="app">
     <header class="hero">
-      <p class="eyebrow">Module 4 Practice Activity &middot; MLO 6</p>
-      <h1>The Real Cost of a Supplier</h1>
-      <p class="hero-copy">
-        Three suppliers. Three different answers to the question, “Which one costs less?”
-        Reveal the costs one layer at a time, then stress-test your decision.
-      </p>
-
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Module 4 Practice Activity &middot; MLO 6</p>
+          <h1>The Real Cost of a Supplier</h1>
+          <p class="hero-copy">Northstar Home Appliances is selecting a supplier for the electronic control module used across a new family of microwaves and dishwashers. Reveal the decision one cost layer at a time, then find out how quickly the answer can change.</p>
+        </div>
+        <figure class="appliance-figure">
+          <svg viewBox="0 0 520 300" role="img" aria-labelledby="controlTitle controlDesc">
+            <title id="controlTitle">Microwave electronic control panel</title><desc id="controlDesc">A stylized microwave with a digital display, number pad, and cooking controls connected to a small circuit board.</desc>
+            <defs><linearGradient id="metal" x1="0" x2="1"><stop offset="0" stop-color="#d9e2e8"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#bac8d1"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#233847"/><stop offset="1" stop-color="#07131c"/></linearGradient></defs>
+            <rect x="12" y="24" width="392" height="244" rx="18" fill="url(#metal)" stroke="#dceaf4" stroke-width="5"/><rect x="33" y="49" width="242" height="190" rx="10" fill="url(#glass)"/><path d="M58 205c48-62 123-100 194-120" fill="none" stroke="#6d8797" stroke-width="4" opacity=".45"/>
+            <rect x="294" y="49" width="91" height="190" rx="8" fill="#132c3d"/><rect x="306" y="61" width="67" height="32" rx="4" fill="#07131c" stroke="#2f6f9f"/><text x="339.5" y="83" fill="#80f0d4" font-family="Arial" font-size="17" text-anchor="middle">12:00</text>
+            <g fill="#e8f1f7"><circle cx="313" cy="113" r="8"/><circle cx="340" cy="113" r="8"/><circle cx="367" cy="113" r="8"/><circle cx="313" cy="140" r="8"/><circle cx="340" cy="140" r="8"/><circle cx="367" cy="140" r="8"/><circle cx="313" cy="167" r="8"/><circle cx="340" cy="167" r="8"/><circle cx="367" cy="167" r="8"/></g>
+            <rect x="306" y="190" width="31" height="28" rx="5" fill="#dceaf4"/><rect x="343" y="190" width="30" height="28" rx="5" fill="#49a270"/><path d="M404 125h34" stroke="#f4b942" stroke-width="4" stroke-linecap="round"/><path d="M438 125c15 0 15 33 31 33" fill="none" stroke="#f4b942" stroke-width="4"/><rect x="448" y="139" width="59" height="58" rx="7" fill="#dceaf4" stroke="#fff" stroke-width="3"/><path d="M460 151h34M460 161h24M460 171h39M460 181h19" stroke="#2f6f9f" stroke-width="3"/><circle cx="459" cy="150" r="3" fill="#f4b942"/><circle cx="499" cy="181" r="3" fill="#49a270"/>
+          </svg>
+          <figcaption>One small module controls a surprisingly large part of the customer experience.</figcaption>
+        </figure>
+      </div>
+      <p class="fun-note"><strong>Why this tiny part matters:</strong> Imagine a microwave with no buttons or a dishwasher permanently committed to one mysterious cycle. Without a reliable control module (the buttons), you'll be stuck with a single-action appliance.</p>
       <div class="scenario-strip" aria-label="Scenario facts">
-        <div class="scenario-fact">
-          <span>Your company</span>
-          <strong>Northstar Home Appliances</strong>
-        </div>
-        <div class="scenario-fact">
-          <span>Component</span>
-          <strong>Electronic control modules</strong>
-        </div>
-        <div class="scenario-fact">
-          <span>Annual demand</span>
-          <strong>12,000 units</strong>
-        </div>
+        <div class="scenario-fact"><span>Company</span><strong>Northstar Home Appliances</strong></div><div class="scenario-fact"><span>Component</span><strong>Electronic control module</strong></div><div class="scenario-fact"><span>First-year demand</span><strong>12,400 units</strong></div><div class="scenario-fact"><span>Your challenge</span><strong>Compare cost, fit, and risk</strong></div>
       </div>
     </header>
 
     <section class="progress-card" aria-labelledby="progress-title">
-      <div class="progress-heading">
-        <strong id="progress-title">Your progress</strong>
-        <span id="progressText" aria-live="polite">Round 1 of 4</span>
-      </div>
-      <ol class="progress-list">
-        <li class="progress-step active" id="progress1" aria-current="step">
-          <span class="number">1</span><span>Purchase price</span>
-        </li>
-        <li class="progress-step" id="progress2">
-          <span class="number">2</span><span>Landed cost</span>
-        </li>
-        <li class="progress-step" id="progress3">
-          <span class="number">3</span><span>Ownership cost</span>
-        </li>
-        <li class="progress-step" id="progress4">
-          <span class="number">4</span><span>What-if analysis</span>
-        </li>
-      </ol>
+      <div class="progress-heading"><strong id="progress-title">Your progress</strong><span id="progressText" aria-live="polite">Round 1 of 4</span></div>
+      <ol class="progress-list"><li class="progress-step active" id="progress1" aria-current="step"><span class="number">1</span><span>Quote &amp; fit</span></li><li class="progress-step" id="progress2"><span class="number">2</span><span>Landed cost</span></li><li class="progress-step" id="progress3"><span class="number">3</span><span>Ownership cost</span></li><li class="progress-step" id="progress4"><span class="number">4</span><span>What-if analysis</span></li></ol>
     </section>
 
     <section class="round" id="round1" aria-labelledby="round1Title">
-      <div class="round-header">
-        <div>
-          <p class="round-number">Round 1 &middot; What the quote shows</p>
-          <h2 id="round1Title">Choose Using Purchase Price</h2>
-          <p class="round-intro">Assume Northstar needs 12,000 modules. Which supplier looks least expensive?</p>
-        </div>
-        <span class="metric-badge">Price only</span>
-      </div>
-      <div class="round-body">
-        <div class="supplier-grid" id="priceCards"></div>
-        <div class="feedback" id="feedback1" role="status" aria-live="polite">
-          Select a supplier before revealing the next layer of cost.
-        </div>
-        <div class="action-row">
-          <button class="primary-button" id="reveal2" type="button" disabled>Reveal Delivered Costs</button>
-        </div>
-      </div>
+      <div class="round-header"><div><p class="round-number">Round 1 &middot; What the quote reveals</p><h2 id="round1Title">Compare the Commercial Offers</h2><p class="round-intro">Start with the quoted price, location, and ordering constraints. Which supplier looks most attractive at first glance?</p></div><span class="metric-badge">Commercial fit</span></div>
+      <div class="round-body"><div class="supplier-grid" id="commercialCards"></div><div class="feedback" id="feedback1" role="status" aria-live="polite">Select a supplier before revealing the delivered costs.</div><div class="action-row"><button class="primary-button" id="reveal2" type="button" disabled>Reveal Delivered Costs</button></div></div>
     </section>
 
     <section class="round" id="round2" aria-labelledby="round2Title" hidden>
-      <div class="round-header">
-        <div>
-          <p class="round-number">Round 2 &middot; Getting it to your door</p>
-          <h2 id="round2Title">Compare Total Landed Cost</h2>
-          <p class="round-intro">Now include freight, tariffs, and inbound handling.</p>
-        </div>
-        <span class="metric-badge">Purchase + delivery</span>
-      </div>
-      <div class="round-body">
-        <p class="definition"><strong>Total landed cost (TLC)</strong> estimates the annual cost to purchase and deliver the modules to Northstar.</p>
-        <div class="table-wrap" id="tlcTable"></div>
-        <div class="chart" id="tlcChart" aria-label="Annual total landed cost comparison"></div>
-        <div class="supplier-grid" id="tlcChoices" style="margin-top:16px;"></div>
-        <div class="feedback" id="feedback2" role="status" aria-live="polite">
-          Review the new costs, then select a supplier again.
-        </div>
-        <div class="action-row">
-          <button class="primary-button" id="reveal3" type="button" disabled>Reveal Ownership Costs</button>
-        </div>
-      </div>
+      <div class="round-header"><div><p class="round-number">Round 2 &middot; Getting the modules to Northstar</p><h2 id="round2Title">Compare Total Landed Cost</h2><p class="round-intro">Order multiples may create excess units, and geography changes freight, tariffs, handling, and lead time.</p></div><span class="metric-badge">Purchase + delivery</span></div>
+      <div class="round-body"><p class="definition"><strong>Total landed cost (TLC)</strong> includes the units Northstar must commit to purchase—not merely the units it expects to use—plus freight, tariffs, and inbound handling.</p><div class="table-wrap" id="landedTable"></div><div class="supplier-grid" id="landedChoices" style="margin-top:14px;"></div><div class="feedback" id="feedback2" role="status" aria-live="polite">Review the new costs, then select a supplier again.</div><div class="action-row"><button class="primary-button" id="reveal3" type="button" disabled>Reveal Quality and Risk Costs</button></div></div>
     </section>
 
     <section class="round" id="round3" aria-labelledby="round3Title" hidden>
-      <div class="round-header">
-        <div>
-          <p class="round-number">Round 3 &middot; Living with the decision</p>
-          <h2 id="round3Title">Compare Total Cost of Ownership</h2>
-          <p class="round-intro">Add the costs and benefits that continue after the shipment arrives.</p>
-        </div>
-        <span class="metric-badge">Six TCO effects</span>
-      </div>
-      <div class="round-body">
-        <p class="definition"><strong>Total cost of ownership (TCO)</strong> adds quality, inventory, expediting, supplier-management, disruption, and support effects to TLC.</p>
-        <div class="table-wrap" id="tcoTable"></div>
-        <div class="chart" id="tcoChart" aria-label="Annual total cost of ownership comparison"></div>
-        <p class="factor-note">Parentheses indicate a benefit that reduces total cost.</p>
-        <div class="supplier-grid" id="tcoChoices" style="margin-top:16px;"></div>
-        <div class="feedback" id="feedback3" role="status" aria-live="polite">
-          Compare the full annual costs, then make your third selection.
-        </div>
-        <div class="action-row">
-          <button class="primary-button" id="reveal4" type="button" disabled>Open the What-If Control Room</button>
-        </div>
-      </div>
+      <div class="round-header"><div><p class="round-number">Round 3 &middot; Living with the supplier</p><h2 id="round3Title">Compare Total Cost of Ownership</h2><p class="round-intro">Now add quality, inventory, expediting, management effort, disruption exposure, and support benefits.</p></div><span class="metric-badge">Beyond the invoice</span></div>
+      <div class="round-body"><div class="signal-grid" id="signalCards"></div><p class="definition"><strong>Total cost of ownership (TCO)</strong> translates these operating signals into annual estimates. They are useful decision inputs, but they remain assumptions—not crystal balls.</p><div class="table-wrap" id="ownershipTable"></div><div class="supplier-grid" id="ownershipChoices" style="margin-top:14px;"></div><div class="feedback" id="feedback3" role="status" aria-live="polite">Compare the full cost picture, then make one more provisional selection.</div><div class="action-row"><button class="primary-button" id="reveal4" type="button" disabled>Open the What-If Control Room</button></div></div>
     </section>
 
     <section class="round" id="round4" aria-labelledby="round4Title" hidden>
-      <div class="round-header">
-        <div>
-          <p class="round-number">Round 4 &middot; Test the assumptions</p>
-          <h2 id="round4Title">Enter the What-If Control Room</h2>
-          <p class="round-intro">Move the controls and watch the annual costs and preferred supplier respond.</p>
-        </div>
-        <span class="metric-badge">Live model</span>
-      </div>
+      <div class="round-header"><div><p class="round-number">Round 4 &middot; Stress-test the answer</p><h2 id="round4Title">Enter the What-If Control Room</h2><p class="round-intro">Try realistic situations or change assumptions for any supplier. Watch the cost leaders move.</p></div><span class="metric-badge">No universal winner</span></div>
       <div class="round-body">
+        <h3 class="scenario-heading">Start with a Scenario</h3><p class="scenario-help">Each button changes several related assumptions. The scenarios are not predictions; they are structured ways to test the decision.</p><div class="scenario-grid" id="scenarioButtons"></div><div class="scenario-note" id="scenarioNote" aria-live="polite"></div>
         <div class="control-layout">
-          <div class="controls">
-            <h3>Assumptions</h3>
-            <p class="controls-intro">The baseline values match the costs you just reviewed.</p>
-
-            <div class="control">
-              <label for="demand">Annual demand <output id="demandOut" for="demand">12,000 units</output></label>
-              <input id="demand" type="range" min="8000" max="20000" step="1000" value="12000">
-            </div>
-
-            <div class="control">
-              <label for="tariff">PacificCore tariff <output id="tariffOut" for="tariff">12%</output></label>
-              <input id="tariff" type="range" min="0" max="25" step="1" value="12">
-            </div>
-
-            <div class="control">
-              <label for="freight">PacificCore freight level <output id="freightOut" for="freight">100%</output></label>
-              <input id="freight" type="range" min="60" max="200" step="10" value="100">
-            </div>
-
-            <div class="control">
-              <label for="leadTime">PacificCore lead time <output id="leadTimeOut" for="leadTime">70 days</output></label>
-              <input id="leadTime" type="range" min="30" max="120" step="5" value="70">
-            </div>
-
-            <div class="control">
-              <label for="defect">PacificCore defect rate <output id="defectOut" for="defect">4.0%</output></label>
-              <input id="defect" type="range" min="0.5" max="8" step="0.5" value="4">
-            </div>
-
-            <div class="control">
-              <label for="disruption">Disruption exposure <output id="disruptionOut" for="disruption">100%</output></label>
-              <input id="disruption" type="range" min="50" max="200" step="10" value="100">
-            </div>
-
-            <div class="control">
-              <label for="carrying">Annual inventory carrying rate <output id="carryingOut" for="carrying">20%</output></label>
-              <input id="carrying" type="range" min="10" max="35" step="1" value="20">
-            </div>
-
-            <button class="secondary-button" id="resetAssumptions" type="button">Restore Baseline</button>
-          </div>
-
-          <div class="results-panel">
-            <h3>Live Annual Cost Comparison</h3>
-            <div class="winner-callout" id="liveWinner" aria-live="polite"></div>
-            <div class="table-wrap" id="liveTable"></div>
-            <div class="chart" id="liveChart" aria-label="Live annual total cost of ownership comparison"></div>
-
-            <div class="decision-history" aria-label="Your earlier supplier selections">
-              <div class="history-item"><span>Price choice</span><strong id="history1">Not selected</strong></div>
-              <div class="history-item"><span>Landed-cost choice</span><strong id="history2">Not selected</strong></div>
-              <div class="history-item"><span>TCO choice</span><strong id="history3">Not selected</strong></div>
-            </div>
-          </div>
+          <div class="controls"><h3>Business Conditions</h3><p class="controls-intro">These four conditions affect all three suppliers. Move a slider to create a custom scenario.</p><div class="control"><label for="demand">First-year demand <output id="demandOut" for="demand"></output></label><input id="demand" type="range" min="6000" max="30000" step="500"></div><div class="control"><label for="carryingRate">Inventory carrying rate <output id="carryingRateOut" for="carryingRate"></output></label><input id="carryingRate" type="range" min="10" max="35" step="1"></div><div class="control"><label for="defectCost">Cost per defective unit <output id="defectCostOut" for="defectCost"></output></label><input id="defectCost" type="range" min="50" max="300" step="10"></div><div class="control"><label for="disruptionImpact">Cost of a major interruption <output id="disruptionImpactOut" for="disruptionImpact"></output></label><input id="disruptionImpact" type="range" min="100000" max="500000" step="25000"></div><button class="secondary-button" id="restoreBaseline" type="button">Restore Baseline</button></div>
+          <div class="results-panel"><h3>Live Annual Cost Comparison</h3><div class="winner-callout" id="liveWinner" aria-live="polite"></div><div class="table-wrap" id="liveTable"></div><div class="leader-grid" aria-label="Current cost leaders"><div class="leader"><span>Lowest quote</span><strong id="priceLeader"></strong></div><div class="leader"><span>Lowest TLC</span><strong id="tlcLeader"></strong></div><div class="leader"><span>Lowest TCO</span><strong id="tcoLeader"></strong></div></div><div class="history" aria-label="Your earlier supplier selections"><div class="history-item"><span>Round 1 choice</span><strong id="history1">Not selected</strong></div><div class="history-item"><span>Round 2 choice</span><strong id="history2">Not selected</strong></div><div class="history-item"><span>Round 3 choice</span><strong id="history3">Not selected</strong></div></div></div>
         </div>
-
-        <section class="decision-panel" aria-labelledby="decisionTitle">
-          <h3 id="decisionTitle">Make Your Final Recommendation</h3>
-          <p style="margin:0;color:var(--muted);">Choose a supplier and at least two factors. The applet will create a decision note using the current assumptions.</p>
-
-          <div class="decision-grid">
-            <div>
-              <label for="finalSupplier"><strong>Recommended supplier</strong></label>
-              <select id="finalSupplier" style="margin-top:6px;">
-                <option value="">Select a supplier</option>
-                <option value="pacific">PacificCore</option>
-                <option value="heartland">Heartland Components</option>
-                <option value="local">LocalTech Systems</option>
-              </select>
-            </div>
-
-            <fieldset>
-              <legend>Most important factors</legend>
-              <div class="checkbox-list">
-                <label><input type="checkbox" name="reason" value="landed cost"> Landed cost</label>
-                <label><input type="checkbox" name="reason" value="quality and defect costs"> Quality and defect costs</label>
-                <label><input type="checkbox" name="reason" value="lead time and inventory implications"> Lead time and inventory implications</label>
-                <label><input type="checkbox" name="reason" value="supply continuity and disruption exposure"> Supply continuity and disruption exposure</label>
-                <label><input type="checkbox" name="reason" value="supplier management requirements"> Supplier management requirements</label>
-                <label><input type="checkbox" name="reason" value="technical support and operating benefits"> Technical support and operating benefits</label>
-              </div>
-            </fieldset>
-          </div>
-
-          <div class="action-row" style="justify-content:flex-start;">
-            <button class="primary-button" id="generateNote" type="button">Generate My Decision Note</button>
-            <button class="copy-button" id="copyNote" type="button" hidden>Copy Note</button>
-            <span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span>
-          </div>
-
-          <div class="decision-note" id="decisionNote" tabindex="-1" aria-live="polite">
-            Your decision note will appear here.
-          </div>
-        </section>
+        <details class="assumption-details"><summary>Fine-tune assumptions for any supplier</summary><div class="assumption-body"><p class="assumption-intro">Change the quote, logistics, quality, risk, or ordering constraints for one or more suppliers. The live comparison updates immediately.</p><div class="supplier-control-grid" id="supplierControls"></div></div></details>
+        <div class="takeaway"><h3>The sourcing lesson</h3><p id="takeawayText">A supplier is not simply “cheap” or “expensive.” The preferred option is conditional on volume, order fit, logistics, quality, risk, and what the business values most.</p></div>
       </div>
     </section>
 
-    <details class="methodology">
-      <summary>How does the model calculate the costs?</summary>
-      <div class="methodology-body">
-        <p style="margin:0;">All calculations use an annual basis. The model intentionally simplifies a real sourcing analysis so you can see how each cost layer changes the decision.</p>
-        <ul>
-          <li><strong>Annual purchase cost</strong> = annual demand &times; quoted unit price.</li>
-          <li><strong>Total landed cost</strong> = purchase cost + freight + tariffs + inbound handling.</li>
-          <li><strong>Defect cost</strong> = annual demand &times; defect rate &times; estimated cost per defective unit.</li>
-          <li><strong>Inventory carrying cost</strong> = purchase cost &times; lead-time fraction of a year &times; annual carrying rate.</li>
-          <li><strong>Expected disruption cost</strong> = annual disruption probability &times; estimated financial impact.</li>
-          <li><strong>TCO</strong> = TLC + defect cost + inventory carrying cost + expediting + supplier management + expected disruption cost &minus; support benefits.</li>
-        </ul>
-      </div>
-    </details>
-
-    <p class="footnote">Instructor-created fictional scenario for educational use. Results are estimates, not promises about supplier performance.</p>
+    <details class="methodology"><summary>How does the activity calculate the costs?</summary><div class="methodology-body"><p style="margin:0;">All figures use a simplified first-year model. Open the list below if you want to inspect the mechanics.</p><ul><li><strong>Committed units</strong> = the greater of the supplier minimum or demand rounded up to the supplier&rsquo;s required order multiple.</li><li><strong>Purchase cost</strong> = committed units &times; quoted unit price.</li><li><strong>TLC</strong> = purchase cost + freight + tariffs + inbound handling.</li><li><strong>Quality cost</strong> = expected demand &times; defect rate &times; cost per defective unit.</li><li><strong>Pipeline carrying cost</strong> = expected demand &times; unit price &times; lead-time fraction of a year &times; carrying rate.</li><li><strong>Excess-unit carrying cost</strong> = units above expected demand &times; unit price &times; carrying rate.</li><li><strong>Expected disruption cost</strong> = disruption probability &times; estimated interruption impact.</li><li><strong>TCO</strong> = TLC + quality + pipeline inventory + excess inventory + expediting + supplier management + expected disruption &minus; support benefits.</li></ul></div></details>
+    <p class="footnote">Instructor-created fictional scenario for educational use. Locations and supplier data are invented; results illustrate decision logic rather than actual supplier performance.</p>
   </main>
 
   <script>
     "use strict";
-
-    const baselineDemand = 12000;
-    const suppliers = [
-      {
-        id: "pacific",
-        name: "PacificCore",
-        type: "Overseas supplier",
-        unitPrice: 44,
-        freightPerUnit: 2.50,
-        handlingPerUnit: 0.50,
-        tariffRate: 0.12,
-        leadDays: 70,
-        defectRate: 0.04,
-        defectCost: 90,
-        expediting: 14000,
-        management: 18000,
-        disruptionProbability: 0.15,
-        disruptionImpact: 250000,
-        supportBenefit: 0
-      },
-      {
-        id: "heartland",
-        name: "Heartland Components",
-        type: "Regional supplier",
-        unitPrice: 49,
-        freightPerUnit: 1.20,
-        handlingPerUnit: 0.40,
-        tariffRate: 0,
-        leadDays: 25,
-        defectRate: 0.018,
-        defectCost: 70,
-        expediting: 6000,
-        management: 10000,
-        disruptionProbability: 0.06,
-        disruptionImpact: 200000,
-        supportBenefit: 8000
-      },
-      {
-        id: "local",
-        name: "LocalTech Systems",
-        type: "Domestic technical partner",
-        unitPrice: 53,
-        freightPerUnit: 0.40,
-        handlingPerUnit: 0.30,
-        tariffRate: 0,
-        leadDays: 8,
-        defectRate: 0.007,
-        defectCost: 55,
-        expediting: 2000,
-        management: 6000,
-        disruptionProbability: 0.03,
-        disruptionImpact: 150000,
-        supportBenefit: 25000
-      }
+    const baselineGlobals={demand:12400,carryingRate:.20,defectCost:110,disruptionImpact:240000};
+    const baselineSuppliers=[
+      {id:"pacific",name:"PacificCore Electronics",type:"Global supplier",location:"Penang, Malaysia",route:"Ocean + drayage",unitPrice:42.50,moq:6000,multiple:3000,freightPerUnit:2.80,handlingPerUnit:.55,tariffRate:.12,leadDays:75,defectRate:.038,otif:.88,expediting:16000,management:20000,disruptionProbability:.14,supportBenefit:0,qualityNote:"Qualified facility; recent lots show more incoming variation."},
+      {id:"nuevo",name:"NuevoCircuit Manufacturing",type:"Nearshore supplier",location:"Monterrey, Mexico",route:"Cross-border truck",unitPrice:47.75,moq:2500,multiple:1000,freightPerUnit:1.45,handlingPerUnit:.40,tariffRate:0,leadDays:28,defectRate:.016,otif:.94,expediting:7000,management:11000,disruptionProbability:.07,supportBenefit:8000,qualityNote:"Stable incoming quality with responsive corrective action."},
+      {id:"great",name:"Great Lakes Controls",type:"Domestic technical partner",location:"Cleveland, Ohio",route:"Regional truck",unitPrice:52,moq:500,multiple:500,freightPerUnit:.55,handlingPerUnit:.30,tariffRate:0,leadDays:9,defectRate:.006,otif:.985,expediting:2500,management:6500,disruptionProbability:.03,supportBenefit:28000,qualityNote:"Strong process capability plus rapid engineering support."}
     ];
-
-    const selections = { 1: null, 2: null, 3: null };
-    const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-    const unitMoney = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const integer = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-
-    function assumptionsFromControls() {
-      return {
-        demand: Number(document.getElementById("demand").value),
-        tariff: Number(document.getElementById("tariff").value) / 100,
-        freightMultiplier: Number(document.getElementById("freight").value) / 100,
-        leadDays: Number(document.getElementById("leadTime").value),
-        defectRate: Number(document.getElementById("defect").value) / 100,
-        disruptionMultiplier: Number(document.getElementById("disruption").value) / 100,
-        carryingRate: Number(document.getElementById("carrying").value) / 100
-      };
-    }
-
-    function baselineAssumptions() {
-      return {
-        demand: baselineDemand,
-        tariff: 0.12,
-        freightMultiplier: 1,
-        leadDays: 70,
-        defectRate: 0.04,
-        disruptionMultiplier: 1,
-        carryingRate: 0.20
-      };
-    }
-
-    function calculateAll(a) {
-      return suppliers.map((base) => {
-        const s = { ...base };
-        if (s.id === "pacific") {
-          s.tariffRate = a.tariff;
-          s.freightPerUnit = base.freightPerUnit * a.freightMultiplier;
-          s.leadDays = a.leadDays;
-          s.defectRate = a.defectRate;
-        }
-
-        const purchase = a.demand * s.unitPrice;
-        const freight = a.demand * s.freightPerUnit;
-        const tariff = purchase * s.tariffRate;
-        const handling = a.demand * s.handlingPerUnit;
-        const tlc = purchase + freight + tariff + handling;
-        const defects = a.demand * s.defectRate * s.defectCost;
-        const inventory = purchase * (s.leadDays / 365) * a.carryingRate;
-        const disruption = s.disruptionProbability * s.disruptionImpact * a.disruptionMultiplier;
-        const tco = tlc + defects + inventory + s.expediting + s.management + disruption - s.supportBenefit;
-
-        return { ...s, purchase, freight, tariff, handling, tlc, defects, inventory, disruption, tco };
-      });
-    }
-
-    function lowest(results, metric) {
-      return results.reduce((best, item) => item[metric] < best[metric] ? item : best, results[0]);
-    }
-
-    function supplierById(id) {
-      return suppliers.find((supplier) => supplier.id === id);
-    }
-
-    function supplierCards(containerId, round, metric, results) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = results.map((s) => {
-        const displayValue = metric === "unitPrice" ? unitMoney.format(s.unitPrice) : money.format(s[metric]);
-        const note = metric === "unitPrice" ? "quoted price per unit" : (metric === "tlc" ? "annual total landed cost" : "annual total cost of ownership");
-        return `
-          <article class="supplier-card" data-card-round="${round}" data-supplier="${s.id}">
-            <h3>${s.name}</h3>
-            <span class="supplier-type">${s.type}</span>
-            <p class="price">${displayValue}</p>
-            <p class="price-note">${note}</p>
-            <button class="choose-button" type="button" data-round="${round}" data-supplier="${s.id}" aria-pressed="false">
-              Choose ${s.name}
-            </button>
-          </article>`;
-      }).join("");
-    }
-
-    function landedTable(results) {
-      const winner = lowest(results, "tlc");
-      return `
-        <table>
-          <caption>Annual delivered-cost calculation</caption>
-          <thead><tr><th scope="col">Supplier</th><th scope="col">Purchase</th><th scope="col">Freight</th><th scope="col">Tariff</th><th scope="col">Handling</th><th scope="col">TLC</th></tr></thead>
-          <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.purchase)}</td><td>${money.format(s.freight)}</td><td>${money.format(s.tariff)}</td><td>${money.format(s.handling)}</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tlc)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
-        </table>`;
-    }
-
-    function ownershipTable(results, compact = false) {
-      const winner = lowest(results, "tco");
-      if (compact) {
-        return `
-          <table>
-            <caption>Current annual estimates</caption>
-            <thead><tr><th scope="col">Supplier</th><th scope="col">Purchase</th><th scope="col">TLC</th><th scope="col">TCO</th></tr></thead>
-            <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.purchase)}</td><td>${money.format(s.tlc)}</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tco)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
-          </table>`;
-      }
-
-      return `
-        <table>
-          <caption>Annual total-cost-of-ownership calculation</caption>
-          <thead><tr><th scope="col">Supplier</th><th scope="col">TLC</th><th scope="col">Defects</th><th scope="col">Inventory</th><th scope="col">Expediting</th><th scope="col">Management</th><th scope="col">Disruption</th><th scope="col">Support benefit</th><th scope="col">TCO</th></tr></thead>
-          <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.tlc)}</td><td>${money.format(s.defects)}</td><td>${money.format(s.inventory)}</td><td>${money.format(s.expediting)}</td><td>${money.format(s.management)}</td><td>${money.format(s.disruption)}</td><td>(${money.format(s.supportBenefit)})</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tco)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
-        </table>`;
-    }
-
-    function renderChart(containerId, results, metric) {
-      const container = document.getElementById(containerId);
-      const max = Math.max(...results.map(s => s[metric]));
-      const winner = lowest(results, metric);
-      container.innerHTML = results.map(s => {
-        const width = Math.max(2, (s[metric] / max) * 100);
-        return `
-          <div class="bar-row">
-            <span class="bar-name">${s.name}${s.id === winner.id ? " · Lowest" : ""}</span>
-            <div class="bar-track" role="img" aria-label="${s.name}: ${money.format(s[metric])}${s.id === winner.id ? ", lowest" : ""}">
-              <div class="bar-fill ${s.id === winner.id ? "winner" : ""}" style="width:${width.toFixed(1)}%"></div>
-            </div>
-            <span class="bar-value">${money.format(s[metric])}</span>
-          </div>`;
-      }).join("");
-    }
-
-    function updateProgress(activeRound) {
-      for (let i = 1; i <= 4; i += 1) {
-        const item = document.getElementById(`progress${i}`);
-        item.classList.toggle("active", i === activeRound);
-        item.classList.toggle("complete", i < activeRound);
-        if (i === activeRound) item.setAttribute("aria-current", "step");
-        else item.removeAttribute("aria-current");
-      }
-      document.getElementById("progressText").textContent = `Round ${activeRound} of 4`;
-    }
-
-    function chooseSupplier(round, supplierId) {
-      selections[round] = supplierId;
-      const results = calculateAll(baselineAssumptions());
-      const metric = round === 1 ? "purchase" : (round === 2 ? "tlc" : "tco");
-      const winner = lowest(results, metric);
-      const selected = results.find(s => s.id === supplierId);
-      const labels = { purchase: "annual purchase cost", tlc: "total landed cost", tco: "total cost of ownership" };
-
-      document.querySelectorAll(`[data-card-round="${round}"]`).forEach(card => {
-        card.classList.toggle("selected", card.dataset.supplier === supplierId);
-      });
-      document.querySelectorAll(`button[data-round="${round}"]`).forEach(button => {
-        const pressed = button.dataset.supplier === supplierId;
-        button.setAttribute("aria-pressed", String(pressed));
-        button.textContent = pressed ? `Selected: ${supplierById(supplierId).name}` : `Choose ${supplierById(button.dataset.supplier).name}`;
-      });
-
-      const feedback = document.getElementById(`feedback${round}`);
-      if (selected.id === winner.id) {
-        feedback.className = "feedback success";
-        feedback.innerHTML = `<strong>${selected.name}</strong> has the lowest visible ${labels[metric]} at this stage. The next layer may change the comparison.`;
-      } else {
-        feedback.className = "feedback";
-        feedback.innerHTML = `You selected <strong>${selected.name}</strong>. Based only on the costs currently visible, <strong>${winner.name}</strong> is lowest. Your choice may still reflect a factor that has not been revealed yet.`;
-      }
-
-      document.getElementById(`reveal${round + 1}`).disabled = false;
-      document.getElementById(`history${round}`).textContent = selected.name;
-    }
-
-    function revealRound(round) {
-      const section = document.getElementById(`round${round}`);
-      section.hidden = false;
-      updateProgress(round);
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.setTimeout(() => section.querySelector("h2").setAttribute("tabindex", "-1"), 0);
-      window.setTimeout(() => section.querySelector("h2").focus(), 350);
-      if (round === 4) renderLive();
-    }
-
-    function updateOutputs(a) {
-      document.getElementById("demandOut").textContent = `${integer.format(a.demand)} units`;
-      document.getElementById("tariffOut").textContent = `${Math.round(a.tariff * 100)}%`;
-      document.getElementById("freightOut").textContent = `${Math.round(a.freightMultiplier * 100)}%`;
-      document.getElementById("leadTimeOut").textContent = `${a.leadDays} days`;
-      document.getElementById("defectOut").textContent = `${(a.defectRate * 100).toFixed(1)}%`;
-      document.getElementById("disruptionOut").textContent = `${Math.round(a.disruptionMultiplier * 100)}%`;
-      document.getElementById("carryingOut").textContent = `${Math.round(a.carryingRate * 100)}%`;
-    }
-
-    function renderLive() {
-      const assumptions = assumptionsFromControls();
-      const results = calculateAll(assumptions);
-      const priceWinner = lowest(results, "purchase");
-      const tlcWinner = lowest(results, "tlc");
-      const tcoWinner = lowest(results, "tco");
-      updateOutputs(assumptions);
-      document.getElementById("liveTable").innerHTML = ownershipTable(results, true);
-      renderChart("liveChart", results, "tco");
-      document.getElementById("liveWinner").innerHTML = `<strong>Current lowest estimated TCO: ${tcoWinner.name}</strong><br>Price leader: ${priceWinner.name}. Landed-cost leader: ${tlcWinner.name}. Move the assumptions to see whether these answers converge or change.`;
-      document.getElementById("copyStatus").textContent = "";
-    }
-
-    function resetAssumptions() {
-      const baseline = { demand: 12000, tariff: 12, freight: 100, leadTime: 70, defect: 4, disruption: 100, carrying: 20 };
-      Object.entries(baseline).forEach(([id, value]) => { document.getElementById(id).value = value; });
-      renderLive();
-    }
-
-    function naturalList(items) {
-      if (items.length === 1) return items[0];
-      if (items.length === 2) return `${items[0]} and ${items[1]}`;
-      return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-    }
-
-    function generateDecisionNote() {
-      const supplierId = document.getElementById("finalSupplier").value;
-      const reasons = [...document.querySelectorAll('input[name="reason"]:checked')].map(input => input.value);
-      const note = document.getElementById("decisionNote");
-      const copyButton = document.getElementById("copyNote");
-
-      if (!supplierId || reasons.length < 2) {
-        note.textContent = "Select a supplier and at least two important factors before generating your decision note.";
-        copyButton.hidden = true;
-        note.focus();
-        return;
-      }
-
-      const results = calculateAll(assumptionsFromControls());
-      const selected = results.find(s => s.id === supplierId);
-      const winner = lowest(results, "tco");
-      const context = selected.id === winner.id
-        ? `${selected.name} currently has the lowest estimated TCO in the model.`
-        : `${winner.name} currently has the lowest estimated TCO, so choosing ${selected.name} requires a business justification for accepting that cost difference.`;
-
-      note.textContent = `I recommend ${selected.name}. Under the current assumptions, its estimated annual purchase cost is ${money.format(selected.purchase)}, its total landed cost is ${money.format(selected.tlc)}, and its total cost of ownership is ${money.format(selected.tco)}. My recommendation is driven primarily by ${naturalList(reasons)}. ${context}`;
-      copyButton.hidden = false;
-      note.focus();
-    }
-
-    async function copyDecisionNote() {
-      const text = document.getElementById("decisionNote").textContent;
-      const status = document.getElementById("copyStatus");
-      try {
-        await navigator.clipboard.writeText(text);
-        status.textContent = "Decision note copied.";
-      } catch (error) {
-        status.textContent = "Copy was blocked. Select the note and copy it manually.";
-      }
-    }
-
-    const baselineResults = calculateAll(baselineAssumptions());
-    supplierCards("priceCards", 1, "unitPrice", baselineResults);
-    supplierCards("tlcChoices", 2, "tlc", baselineResults);
-    supplierCards("tcoChoices", 3, "tco", baselineResults);
-    document.getElementById("tlcTable").innerHTML = landedTable(baselineResults);
-    document.getElementById("tcoTable").innerHTML = ownershipTable(baselineResults);
-    renderChart("tlcChart", baselineResults, "tlc");
-    renderChart("tcoChart", baselineResults, "tco");
-
-    document.addEventListener("click", (event) => {
-      const choose = event.target.closest("button[data-round]");
-      if (choose) chooseSupplier(Number(choose.dataset.round), choose.dataset.supplier);
-    });
-
-    document.getElementById("reveal2").addEventListener("click", () => revealRound(2));
-    document.getElementById("reveal3").addEventListener("click", () => revealRound(3));
-    document.getElementById("reveal4").addEventListener("click", () => revealRound(4));
-    document.querySelectorAll('.controls input[type="range"]').forEach(input => input.addEventListener("input", renderLive));
-    document.getElementById("resetAssumptions").addEventListener("click", resetAssumptions);
-    document.getElementById("generateNote").addEventListener("click", generateDecisionNote);
-    document.getElementById("copyNote").addEventListener("click", copyDecisionNote);
+    const scenarios={
+      baseline:{label:"Baseline",short:"The current quotes and operating estimates.",note:"The baseline begins with the information Northstar currently has. Notice whether the quote, landed-cost, and ownership-cost leaders agree.",globals:{},suppliers:{}},
+      ocean:{label:"Ocean Lanes Stabilize",short:"Lower freight and tariffs; stronger PacificCore performance.",note:"A trade agreement removes the tariff, freight markets soften, and PacificCore completes a successful quality-improvement program.",globals:{demand:15000},suppliers:{pacific:{freightPerUnit:1.60,tariffRate:0,leadDays:45,defectRate:.010,expediting:9000,management:16000,disruptionProbability:.05}}},
+      nearshore:{label:"Nearshore Partnership",short:"Volume commitment improves NuevoCircuit's economics.",note:"Northstar commits more volume to NuevoCircuit in exchange for a lower price, better quality, faster replenishment, and added technical support.",globals:{demand:18000},suppliers:{nuevo:{unitPrice:45.50,freightPerUnit:1.20,leadDays:21,defectRate:.008,expediting:5000,management:9000,disruptionProbability:.04,supportBenefit:18000}}},
+      quality:{label:"Failure Is Costly",short:"A field failure becomes much more expensive.",note:"The module will be used in a premium appliance. Warranty service, technician travel, and customer dissatisfaction raise the cost of each defect.",globals:{defectCost:280,disruptionImpact:300000},suppliers:{}},
+      softDemand:{label:"Demand Softens",short:"Lower volume makes order flexibility more valuable.",note:"A housing slowdown cuts first-year demand. Minimum commitments and order multiples now matter much more than they did in the original forecast.",globals:{demand:7000,carryingRate:.28},suppliers:{}}
+    };
+    const selections={1:null,2:null,3:null};let currentGlobals={...baselineGlobals};let currentSuppliers=baselineSuppliers.map(s=>({...s}));let currentScenario="baseline";
+    const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});const unitMoney=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2});const integer=new Intl.NumberFormat("en-US",{maximumFractionDigits:0});
+    const deepSuppliers=()=>baselineSuppliers.map(s=>({...s}));const supplierById=(id,set=currentSuppliers)=>set.find(s=>s.id===id);const lowest=(results,metric)=>results.reduce((best,item)=>item[metric]<best[metric]?item:best,results[0]);const pct=value=>`${(value*100).toFixed(value*100%1?1:0)}%`;
+    function calculateSupplier(s,g){const committedUnits=Math.max(s.moq,Math.ceil(g.demand/s.multiple)*s.multiple);const excessUnits=Math.max(0,committedUnits-g.demand);const purchase=committedUnits*s.unitPrice;const freight=committedUnits*s.freightPerUnit;const tariff=purchase*s.tariffRate;const handling=committedUnits*s.handlingPerUnit;const tlc=purchase+freight+tariff+handling;const quality=g.demand*s.defectRate*g.defectCost;const pipelineInventory=g.demand*s.unitPrice*(s.leadDays/365)*g.carryingRate;const excessInventory=excessUnits*s.unitPrice*g.carryingRate;const disruption=s.disruptionProbability*g.disruptionImpact;const tco=tlc+quality+pipelineInventory+excessInventory+s.expediting+s.management+disruption-s.supportBenefit;return{...s,committedUnits,excessUnits,purchase,freight,tariff,handling,tlc,quality,pipelineInventory,excessInventory,disruption,tco}}
+    const calculateAll=(g=currentGlobals,set=currentSuppliers)=>set.map(s=>calculateSupplier(s,g));
+    function commercialCards(results){document.getElementById("commercialCards").innerHTML=results.map(s=>`<article class="supplier-card" data-card-round="1" data-supplier="${s.id}"><h3>${s.name}</h3><span class="supplier-type">${s.type}</span><p class="price">${unitMoney.format(s.unitPrice)}</p><p class="price-note">quoted price per module</p><div class="supplier-facts"><div class="supplier-fact"><span>Location</span><strong>${s.location}</strong></div><div class="supplier-fact"><span>Minimum commitment</span><strong>${integer.format(s.moq)} units</strong></div><div class="supplier-fact"><span>Order multiple</span><strong>${integer.format(s.multiple)} units</strong></div></div><button class="choose-button" type="button" data-round="1" data-supplier="${s.id}" aria-pressed="false">Choose ${s.name}</button></article>`).join("")}
+    function costChoiceCards(containerId,round,metric,results,note){document.getElementById(containerId).innerHTML=results.map(s=>`<article class="supplier-card" data-card-round="${round}" data-supplier="${s.id}"><h3>${s.name}</h3><span class="supplier-type">${s.location}</span><p class="price">${money.format(s[metric])}</p><p class="price-note">${note}</p><button class="choose-button" type="button" data-round="${round}" data-supplier="${s.id}" aria-pressed="false">Choose ${s.name}</button></article>`).join("")}
+    function renderSignals(results){document.getElementById("signalCards").innerHTML=results.map(s=>`<article class="signal-card"><h3>${s.name}</h3><p><strong>Incoming defect rate:</strong> ${pct(s.defectRate)}</p><p><strong>On-time, in-full:</strong> ${pct(s.otif)}</p><p><strong>Major-interruption probability:</strong> ${pct(s.disruptionProbability)}</p><p><strong>Signal:</strong> ${s.qualityNote}</p></article>`).join("")}
+    function landedTable(results){const winner=lowest(results,"tlc");document.getElementById("landedTable").innerHTML=`<table><caption>Baseline first-year landed-cost comparison</caption><thead><tr><th scope="col">Supplier</th><th scope="col">Committed units</th><th scope="col">Excess units</th><th scope="col">Purchase</th><th scope="col">Freight</th><th scope="col">Tariff</th><th scope="col">Handling</th><th scope="col">TLC</th><th scope="col">Lead time</th></tr></thead><tbody>${results.map(s=>`<tr><th scope="row">${s.name}</th><td>${integer.format(s.committedUnits)}</td><td>${integer.format(s.excessUnits)}</td><td>${money.format(s.purchase)}</td><td>${money.format(s.freight)}</td><td>${money.format(s.tariff)}</td><td>${money.format(s.handling)}</td><td class="${s.id===winner.id?"winner-cell":""}">${money.format(s.tlc)}${s.id===winner.id?" (lowest)":""}</td><td>${s.leadDays} days</td></tr>`).join("")}</tbody></table>`}
+    function ownershipTable(results){const winner=lowest(results,"tco");document.getElementById("ownershipTable").innerHTML=`<table><caption>Baseline first-year total-cost-of-ownership comparison</caption><thead><tr><th scope="col">Supplier</th><th scope="col">TLC</th><th scope="col">Quality</th><th scope="col">Pipeline inv.</th><th scope="col">Excess inv.</th><th scope="col">Expediting</th><th scope="col">Management</th><th scope="col">Disruption</th><th scope="col">Support benefit</th><th scope="col">TCO</th></tr></thead><tbody>${results.map(s=>`<tr><th scope="row">${s.name}</th><td>${money.format(s.tlc)}</td><td>${money.format(s.quality)}</td><td>${money.format(s.pipelineInventory)}</td><td>${money.format(s.excessInventory)}</td><td>${money.format(s.expediting)}</td><td>${money.format(s.management)}</td><td>${money.format(s.disruption)}</td><td>(${money.format(s.supportBenefit)})</td><td class="${s.id===winner.id?"winner-cell":""}">${money.format(s.tco)}${s.id===winner.id?" (lowest)":""}</td></tr>`).join("")}</tbody></table>`}
+    function renderLiveTable(results){const winner=lowest(results,"tco");document.getElementById("liveTable").innerHTML=`<table><caption>Current first-year estimates</caption><thead><tr><th scope="col">Supplier</th><th scope="col">Committed</th><th scope="col">Excess</th><th scope="col">Purchase</th><th scope="col">TLC</th><th scope="col">TCO</th></tr></thead><tbody>${results.map(s=>`<tr><th scope="row">${s.name}</th><td>${integer.format(s.committedUnits)}</td><td>${integer.format(s.excessUnits)}</td><td>${money.format(s.purchase)}</td><td>${money.format(s.tlc)}</td><td class="${s.id===winner.id?"winner-cell":""}">${money.format(s.tco)}${s.id===winner.id?" (lowest)":""}</td></tr>`).join("")}</tbody></table>`}
+    function chooseSupplier(round,supplierId){selections[round]=supplierId;const results=calculateAll(baselineGlobals,baselineSuppliers);const metric=round===1?"unitPrice":round===2?"tlc":"tco";const winner=lowest(results,metric);const selected=results.find(s=>s.id===supplierId);const metricLabel=round===1?"quoted unit price":round===2?"total landed cost":"estimated total cost of ownership";document.querySelectorAll(`[data-card-round="${round}"]`).forEach(card=>card.classList.toggle("selected",card.dataset.supplier===supplierId));document.querySelectorAll(`button[data-round="${round}"]`).forEach(button=>{const pressed=button.dataset.supplier===supplierId;button.setAttribute("aria-pressed",String(pressed));button.textContent=pressed?`Selected: ${supplierById(supplierId,baselineSuppliers).name}`:`Choose ${supplierById(button.dataset.supplier,baselineSuppliers).name}`});const feedback=document.getElementById(`feedback${round}`);if(selected.id===winner.id){feedback.className="feedback success";feedback.innerHTML=`<strong>${selected.name}</strong> has the lowest ${metricLabel} in this layer. Keep the choice provisional—the next layer may change the answer.`}else{feedback.className="feedback";feedback.innerHTML=`You selected <strong>${selected.name}</strong>. <strong>${winner.name}</strong> is lowest on the ${metricLabel}, but your choice may reflect another factor you consider important.`}document.getElementById(`reveal${round+1}`).disabled=false;document.getElementById(`history${round}`).textContent=selected.name}
+    function updateProgress(activeRound){for(let i=1;i<=4;i+=1){const item=document.getElementById(`progress${i}`);item.classList.toggle("active",i===activeRound);item.classList.toggle("complete",i<activeRound);if(i===activeRound)item.setAttribute("aria-current","step");else item.removeAttribute("aria-current")}document.getElementById("progressText").textContent=`Round ${activeRound} of 4`}
+    function revealRound(round){const section=document.getElementById(`round${round}`);section.hidden=false;updateProgress(round);const heading=section.querySelector("h2");heading.setAttribute("tabindex","-1");section.scrollIntoView({behavior:"smooth",block:"start"});window.setTimeout(()=>heading.focus(),300);if(round===4)renderLive()}
+    function renderScenarioButtons(){document.getElementById("scenarioButtons").innerHTML=Object.entries(scenarios).map(([key,s])=>`<button type="button" class="scenario-button${key===currentScenario?" active":""}" data-scenario="${key}" aria-pressed="${key===currentScenario}">${s.label}<span>${s.short}</span></button>`).join("")}
+    const fields=[["unitPrice","Unit price ($)",20,100,.25,false],["freightPerUnit","Freight/unit ($)",0,12,.10,false],["tariffRate","Tariff (%)",0,35,1,true],["leadDays","Lead time (days)",1,180,1,false],["defectRate","Defect rate (%)",.1,10,.1,true],["disruptionProbability","Interruption risk (%)",0,40,1,true],["moq","Minimum units",100,30000,100,false],["multiple","Order multiple",100,10000,100,false]];
+    function renderSupplierControls(){document.getElementById("supplierControls").innerHTML=currentSuppliers.map(s=>`<section class="supplier-controls" aria-labelledby="controls-${s.id}"><h4 id="controls-${s.id}">${s.name}</h4><p>${s.location} &middot; ${s.route}</p><div class="field-grid">${fields.map(([key,label,min,max,step,isPercent])=>`<div class="field"><label for="${s.id}-${key}">${label}</label><input id="${s.id}-${key}" type="number" min="${min}" max="${max}" step="${step}" value="${isPercent?+(s[key]*100).toFixed(2):s[key]}" data-supplier-input="${s.id}" data-field="${key}" data-percent="${isPercent}"></div>`).join("")}</div></section>`).join("")}
+    function syncControls(){document.getElementById("demand").value=currentGlobals.demand;document.getElementById("carryingRate").value=currentGlobals.carryingRate*100;document.getElementById("defectCost").value=currentGlobals.defectCost;document.getElementById("disruptionImpact").value=currentGlobals.disruptionImpact;renderSupplierControls()}
+    function updateGlobalOutputs(){document.getElementById("demandOut").textContent=`${integer.format(currentGlobals.demand)} units`;document.getElementById("carryingRateOut").textContent=pct(currentGlobals.carryingRate);document.getElementById("defectCostOut").textContent=money.format(currentGlobals.defectCost);document.getElementById("disruptionImpactOut").textContent=money.format(currentGlobals.disruptionImpact)}
+    function renderLive(){const results=calculateAll();const priceWinner=lowest(results,"unitPrice");const tlcWinner=lowest(results,"tlc");const tcoWinner=lowest(results,"tco");const ordered=[...results].sort((a,b)=>a.tco-b.tco);const gap=ordered[1].tco-ordered[0].tco;updateGlobalOutputs();renderLiveTable(results);document.getElementById("priceLeader").textContent=priceWinner.name;document.getElementById("tlcLeader").textContent=tlcWinner.name;document.getElementById("tcoLeader").textContent=tcoWinner.name;document.getElementById("liveWinner").innerHTML=`<strong>Current lowest estimated TCO: ${tcoWinner.name}</strong><br>The next-lowest option is approximately ${money.format(gap)} higher. Change a condition and see whether the ranking holds.`;document.getElementById("takeawayText").innerHTML=priceWinner.id===tcoWinner.id?`Under these assumptions, <strong>${tcoWinner.name}</strong> leads on both quoted price and TCO. That agreement is scenario-specific, not a permanent truth.`:`Under these assumptions, the lowest quote comes from <strong>${priceWinner.name}</strong>, while the lowest estimated TCO comes from <strong>${tcoWinner.name}</strong>. The difference is exactly why sourcing teams look beyond price.`}
+    function setScenario(key){const scenario=scenarios[key];currentScenario=key;currentGlobals={...baselineGlobals,...scenario.globals};currentSuppliers=deepSuppliers();Object.entries(scenario.suppliers).forEach(([id,overrides])=>Object.assign(supplierById(id),overrides));syncControls();renderScenarioButtons();document.getElementById("scenarioNote").textContent=scenario.note;renderLive()}
+    function markCustom(){currentScenario="custom";document.querySelectorAll(".scenario-button").forEach(button=>{button.classList.remove("active");button.setAttribute("aria-pressed","false")});document.getElementById("scenarioNote").textContent="Custom scenario: you changed one or more assumptions. Compare the new leaders and identify which assumption caused the shift."}
+    function readGlobalControls(){currentGlobals.demand=Number(document.getElementById("demand").value);currentGlobals.carryingRate=Number(document.getElementById("carryingRate").value)/100;currentGlobals.defectCost=Number(document.getElementById("defectCost").value);currentGlobals.disruptionImpact=Number(document.getElementById("disruptionImpact").value)}
+    const baselineResults=calculateAll(baselineGlobals,baselineSuppliers);commercialCards(baselineResults);landedTable(baselineResults);costChoiceCards("landedChoices",2,"tlc",baselineResults,"first-year total landed cost");renderSignals(baselineResults);ownershipTable(baselineResults);costChoiceCards("ownershipChoices",3,"tco",baselineResults,"first-year total cost of ownership");renderScenarioButtons();syncControls();document.getElementById("scenarioNote").textContent=scenarios.baseline.note;
+    document.addEventListener("click",event=>{const choose=event.target.closest("button[data-round]");if(choose)chooseSupplier(Number(choose.dataset.round),choose.dataset.supplier);const scenario=event.target.closest("button[data-scenario]");if(scenario)setScenario(scenario.dataset.scenario)});
+    document.getElementById("reveal2").addEventListener("click",()=>revealRound(2));document.getElementById("reveal3").addEventListener("click",()=>revealRound(3));document.getElementById("reveal4").addEventListener("click",()=>revealRound(4));["demand","carryingRate","defectCost","disruptionImpact"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{readGlobalControls();markCustom();renderLive()}));document.getElementById("restoreBaseline").addEventListener("click",()=>setScenario("baseline"));document.getElementById("supplierControls").addEventListener("input",event=>{const input=event.target.closest("input[data-supplier-input]");if(!input||input.value==="")return;const supplier=supplierById(input.dataset.supplierInput);supplier[input.dataset.field]=Number(input.value)/(input.dataset.percent==="true"?100:1);markCustom();renderLive()});
   </script>
 </body>
 </html>
