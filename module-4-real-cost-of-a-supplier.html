@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive sourcing activity comparing purchase price, total landed cost, total cost of ownership, and supplier risk.">
+  <title>The Real Cost of a Supplier</title>
+  <style>
+    :root {
+      --navy: #174f78;
+      --blue: #2f6f9f;
+      --teal: #116f84;
+      --green: #217346;
+      --gold: #c58a19;
+      --red: #8b1e2d;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --line: #b7c9dd;
+      --pale-blue: #e8f1f7;
+      --pale-teal: #e5f1ef;
+      --surface: #ffffff;
+      --canvas: #f3f7fa;
+      --shadow: 0 12px 30px rgba(23, 79, 120, 0.11);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button, select, input[type="range"], input[type="checkbox"] { cursor: pointer; }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid #f3bf42;
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 18px auto 36px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(22px, 4vw, 38px);
+      background: linear-gradient(125deg, #123f61 0%, var(--navy) 56%, var(--teal) 100%);
+      border-radius: 14px;
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "$";
+      position: absolute;
+      right: 24px;
+      bottom: -56px;
+      color: rgba(255,255,255,.08);
+      font-size: 220px;
+      font-weight: 800;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: #c9e4f3;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { line-height: 1.25; }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 10px 0 0;
+      color: #f2f7fa;
+      font-size: 1.05rem;
+    }
+
+    .scenario-strip {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .scenario-fact {
+      padding: 11px 13px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 8px;
+    }
+
+    .scenario-fact span {
+      display: block;
+      color: #cae4f1;
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .scenario-fact strong { display: block; margin-top: 2px; }
+
+    .progress-card,
+    .round,
+    .methodology {
+      margin-top: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 7px 20px rgba(23,79,120,.06);
+    }
+
+    .progress-card { padding: 16px 18px; }
+
+    .progress-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .progress-heading strong { color: var(--navy); }
+    .progress-heading span { color: var(--muted); font-size: .88rem; }
+
+    .progress-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .progress-step {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      background: #edf2f5;
+      border: 1px solid #d2dde5;
+      border-radius: 7px;
+      color: #4f5f69;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+
+    .progress-step .number {
+      flex: 0 0 27px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #d7e1e7;
+      color: #40525f;
+    }
+
+    .progress-step.active {
+      background: var(--pale-blue);
+      border-color: #7fa4bf;
+      color: var(--navy);
+    }
+
+    .progress-step.active .number { background: var(--navy); color: #ffffff; }
+
+    .progress-step.complete {
+      background: #e7f2eb;
+      border-color: #9cc3aa;
+      color: #185c37;
+    }
+
+    .progress-step.complete .number { background: var(--green); color: #ffffff; }
+
+    .round { overflow: hidden; }
+
+    .round-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 20px 22px 16px;
+      background: linear-gradient(90deg, #edf4f8, #ffffff);
+      border-bottom: 1px solid #d5e0e8;
+    }
+
+    .round-number {
+      margin: 0 0 4px;
+      color: var(--blue);
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .round h2 { margin: 0; color: var(--navy); font-size: clamp(1.35rem, 3vw, 1.75rem); }
+
+    .round-intro { margin: 6px 0 0; color: var(--muted); }
+
+    .metric-badge {
+      flex: 0 0 auto;
+      padding: 5px 10px;
+      background: var(--navy);
+      color: #ffffff;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .round-body { padding: 20px 22px 22px; }
+
+    .supplier-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .supplier-card {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 16px;
+      background: #ffffff;
+      border: 2px solid #c9d6df;
+      border-radius: 10px;
+    }
+
+    .supplier-card.selected {
+      border-color: var(--blue);
+      box-shadow: inset 0 0 0 2px #d8eaf5;
+    }
+
+    .supplier-card h3 { margin: 0; color: var(--navy); font-size: 1.12rem; }
+
+    .supplier-type {
+      display: inline-block;
+      align-self: flex-start;
+      margin: 5px 0 12px;
+      padding: 3px 8px;
+      background: #edf2f5;
+      border-radius: 999px;
+      color: #536572;
+      font-size: .76rem;
+      font-weight: 700;
+    }
+
+    .price {
+      margin: auto 0 2px;
+      color: var(--ink);
+      font-size: 1.6rem;
+      font-weight: 800;
+    }
+
+    .price-note { margin: 0 0 12px; color: var(--muted); font-size: .82rem; }
+
+    .choose-button,
+    .primary-button,
+    .secondary-button,
+    .copy-button {
+      min-height: 43px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .choose-button {
+      width: 100%;
+      padding: 9px 12px;
+      background: #ffffff;
+      color: var(--navy);
+      border: 2px solid var(--blue);
+    }
+
+    .choose-button:hover,
+    .choose-button[aria-pressed="true"] { background: var(--navy); color: #ffffff; }
+
+    .feedback {
+      min-height: 55px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #fff8e8;
+      border-left: 5px solid var(--gold);
+      border-radius: 6px;
+      color: #47391f;
+    }
+
+    .feedback.success {
+      background: #e7f2eb;
+      border-left-color: var(--green);
+      color: #174d31;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .primary-button {
+      padding: 10px 16px;
+      background: var(--navy);
+      color: #ffffff;
+      border: 2px solid var(--navy);
+    }
+
+    .primary-button:hover { background: #0f3f62; }
+
+    .primary-button:disabled {
+      background: #b6c1c8;
+      border-color: #b6c1c8;
+      color: #ffffff;
+      cursor: not-allowed;
+    }
+
+    .secondary-button,
+    .copy-button {
+      padding: 9px 14px;
+      background: #ffffff;
+      color: var(--navy);
+      border: 2px solid var(--blue);
+    }
+
+    .secondary-button:hover,
+    .copy-button:hover { background: var(--pale-blue); }
+
+    .table-wrap { width: 100%; overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .91rem;
+    }
+
+    caption {
+      padding: 0 0 9px;
+      color: var(--navy);
+      font-weight: 700;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 10px 11px;
+      border: 1px solid #cfdbe4;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th { background: #edf4f8; color: var(--navy); }
+    th:first-child, td:first-child { text-align: left; }
+    tbody tr:nth-child(even) td { background: #f8fafb; }
+    .winner-cell { background: #e7f2eb !important; color: #185c37; font-weight: 800; }
+
+    .definition {
+      margin: 0 0 14px;
+      padding: 11px 13px;
+      background: var(--pale-blue);
+      border-left: 5px solid var(--blue);
+      border-radius: 6px;
+    }
+
+    .chart {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 15px;
+      background: #f8fafb;
+      border: 1px solid #d4dfe7;
+      border-radius: 8px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 140px minmax(120px, 1fr) 110px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bar-name { color: var(--navy); font-weight: 700; }
+
+    .bar-track {
+      height: 24px;
+      overflow: hidden;
+      background: #dde6ec;
+      border-radius: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      min-width: 2px;
+      background: linear-gradient(90deg, var(--blue), var(--teal));
+      border-radius: 4px;
+      transition: width .25s ease;
+    }
+
+    .bar-fill.winner { background: linear-gradient(90deg, #217346, #3e9364); }
+    .bar-value { text-align: right; font-weight: 700; }
+
+    .factor-note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    .control-layout {
+      display: grid;
+      grid-template-columns: minmax(270px, .82fr) minmax(390px, 1.45fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .controls {
+      padding: 16px;
+      background: #f3f7fa;
+      border: 1px solid #cbdbe6;
+      border-radius: 9px;
+    }
+
+    .controls h3, .results-panel h3, .decision-panel h3 {
+      margin: 0 0 5px;
+      color: var(--navy);
+    }
+
+    .controls-intro { margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
+
+    .control {
+      padding: 11px 0;
+      border-top: 1px solid #d6e0e7;
+    }
+
+    .control:first-of-type { border-top: 0; padding-top: 0; }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      color: #273f4e;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+
+    .control output { color: var(--navy); white-space: nowrap; }
+    input[type="range"] { width: 100%; margin: 8px 0 0; accent-color: var(--teal); }
+
+    .results-panel {
+      min-width: 0;
+      padding: 16px;
+      background: #ffffff;
+      border: 1px solid #cbdbe6;
+      border-radius: 9px;
+    }
+
+    .winner-callout {
+      margin: 12px 0 14px;
+      padding: 12px 14px;
+      background: #e7f2eb;
+      border-left: 5px solid var(--green);
+      border-radius: 6px;
+      color: #174d31;
+    }
+
+    .decision-history {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .history-item {
+      padding: 10px;
+      background: #edf4f8;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .history-item span { display: block; color: var(--muted); font-size: .76rem; }
+    .history-item strong { color: var(--navy); }
+
+    .decision-panel {
+      margin-top: 18px;
+      padding: 18px;
+      background: #f8fafb;
+      border: 1px solid #cbdbe6;
+      border-radius: 9px;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: .72fr 1.28fr;
+      gap: 16px;
+      margin-top: 13px;
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 13px;
+      border: 1px solid #c7d4dd;
+      border-radius: 7px;
+    }
+
+    legend { padding: 0 5px; color: var(--navy); font-weight: 700; }
+
+    select, textarea {
+      width: 100%;
+      padding: 10px;
+      background: #ffffff;
+      color: var(--ink);
+      border: 1px solid #8ea5b5;
+      border-radius: 5px;
+    }
+
+    .checkbox-list { display: grid; gap: 8px; }
+
+    .checkbox-list label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .checkbox-list input { flex: 0 0 auto; margin-top: 4px; accent-color: var(--teal); }
+
+    .decision-note {
+      min-height: 92px;
+      margin-top: 13px;
+      padding: 13px 14px;
+      background: #ffffff;
+      border: 1px dashed #7f9aac;
+      border-radius: 6px;
+    }
+
+    .copy-status { margin-left: 8px; color: var(--green); font-size: .88rem; font-weight: 700; }
+
+    details.methodology { overflow: hidden; }
+
+    details.methodology summary {
+      padding: 14px 17px;
+      background: #e8f1f7;
+      color: var(--navy);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .methodology-body { padding: 15px 18px 18px; }
+    .methodology-body ul { margin: 8px 0 0; padding-left: 22px; }
+    .methodology-body li { margin-bottom: 6px; }
+
+    .footnote {
+      margin: 14px 4px 0;
+      color: var(--muted);
+      font-size: .82rem;
+      text-align: center;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 820px) {
+      .scenario-strip,
+      .supplier-grid,
+      .progress-list,
+      .control-layout,
+      .decision-grid { grid-template-columns: 1fr; }
+
+      .progress-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bar-row { grid-template-columns: 105px minmax(90px, 1fr) 95px; }
+    }
+
+    @media (max-width: 520px) {
+      .app { width: min(100% - 16px, 1180px); margin-top: 8px; }
+      .hero, .round-body, .round-header { padding-left: 15px; padding-right: 15px; }
+      .round-header { flex-direction: column; }
+      .progress-list { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; gap: 4px; }
+      .bar-value { text-align: left; }
+      th, td { padding: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bar-fill { transition: none; }
+    }
+
+    @media print {
+      body { background: #ffffff; }
+      .app { width: 100%; margin: 0; }
+      .hero { background: #174f78 !important; print-color-adjust: exact; }
+      button, input[type="range"], .progress-card { display: none !important; }
+      [hidden] { display: block !important; }
+      .round, .methodology { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <p class="eyebrow">Module 4 Practice Activity &middot; MLO 6</p>
+      <h1>The Real Cost of a Supplier</h1>
+      <p class="hero-copy">
+        Three suppliers. Three different answers to the question, “Which one costs less?”
+        Reveal the costs one layer at a time, then stress-test your decision.
+      </p>
+
+      <div class="scenario-strip" aria-label="Scenario facts">
+        <div class="scenario-fact">
+          <span>Your company</span>
+          <strong>Northstar Home Appliances</strong>
+        </div>
+        <div class="scenario-fact">
+          <span>Component</span>
+          <strong>Electronic control modules</strong>
+        </div>
+        <div class="scenario-fact">
+          <span>Annual demand</span>
+          <strong>12,000 units</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="progress-card" aria-labelledby="progress-title">
+      <div class="progress-heading">
+        <strong id="progress-title">Your progress</strong>
+        <span id="progressText" aria-live="polite">Round 1 of 4</span>
+      </div>
+      <ol class="progress-list">
+        <li class="progress-step active" id="progress1" aria-current="step">
+          <span class="number">1</span><span>Purchase price</span>
+        </li>
+        <li class="progress-step" id="progress2">
+          <span class="number">2</span><span>Landed cost</span>
+        </li>
+        <li class="progress-step" id="progress3">
+          <span class="number">3</span><span>Ownership cost</span>
+        </li>
+        <li class="progress-step" id="progress4">
+          <span class="number">4</span><span>What-if analysis</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="round" id="round1" aria-labelledby="round1Title">
+      <div class="round-header">
+        <div>
+          <p class="round-number">Round 1 &middot; What the quote shows</p>
+          <h2 id="round1Title">Choose Using Purchase Price</h2>
+          <p class="round-intro">Assume Northstar needs 12,000 modules. Which supplier looks least expensive?</p>
+        </div>
+        <span class="metric-badge">Price only</span>
+      </div>
+      <div class="round-body">
+        <div class="supplier-grid" id="priceCards"></div>
+        <div class="feedback" id="feedback1" role="status" aria-live="polite">
+          Select a supplier before revealing the next layer of cost.
+        </div>
+        <div class="action-row">
+          <button class="primary-button" id="reveal2" type="button" disabled>Reveal Delivered Costs</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="round" id="round2" aria-labelledby="round2Title" hidden>
+      <div class="round-header">
+        <div>
+          <p class="round-number">Round 2 &middot; Getting it to your door</p>
+          <h2 id="round2Title">Compare Total Landed Cost</h2>
+          <p class="round-intro">Now include freight, tariffs, and inbound handling.</p>
+        </div>
+        <span class="metric-badge">Purchase + delivery</span>
+      </div>
+      <div class="round-body">
+        <p class="definition"><strong>Total landed cost (TLC)</strong> estimates the annual cost to purchase and deliver the modules to Northstar.</p>
+        <div class="table-wrap" id="tlcTable"></div>
+        <div class="chart" id="tlcChart" aria-label="Annual total landed cost comparison"></div>
+        <div class="supplier-grid" id="tlcChoices" style="margin-top:16px;"></div>
+        <div class="feedback" id="feedback2" role="status" aria-live="polite">
+          Review the new costs, then select a supplier again.
+        </div>
+        <div class="action-row">
+          <button class="primary-button" id="reveal3" type="button" disabled>Reveal Ownership Costs</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="round" id="round3" aria-labelledby="round3Title" hidden>
+      <div class="round-header">
+        <div>
+          <p class="round-number">Round 3 &middot; Living with the decision</p>
+          <h2 id="round3Title">Compare Total Cost of Ownership</h2>
+          <p class="round-intro">Add the costs and benefits that continue after the shipment arrives.</p>
+        </div>
+        <span class="metric-badge">Six TCO effects</span>
+      </div>
+      <div class="round-body">
+        <p class="definition"><strong>Total cost of ownership (TCO)</strong> adds quality, inventory, expediting, supplier-management, disruption, and support effects to TLC.</p>
+        <div class="table-wrap" id="tcoTable"></div>
+        <div class="chart" id="tcoChart" aria-label="Annual total cost of ownership comparison"></div>
+        <p class="factor-note">Parentheses indicate a benefit that reduces total cost.</p>
+        <div class="supplier-grid" id="tcoChoices" style="margin-top:16px;"></div>
+        <div class="feedback" id="feedback3" role="status" aria-live="polite">
+          Compare the full annual costs, then make your third selection.
+        </div>
+        <div class="action-row">
+          <button class="primary-button" id="reveal4" type="button" disabled>Open the What-If Control Room</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="round" id="round4" aria-labelledby="round4Title" hidden>
+      <div class="round-header">
+        <div>
+          <p class="round-number">Round 4 &middot; Test the assumptions</p>
+          <h2 id="round4Title">Enter the What-If Control Room</h2>
+          <p class="round-intro">Move the controls and watch the annual costs and preferred supplier respond.</p>
+        </div>
+        <span class="metric-badge">Live model</span>
+      </div>
+      <div class="round-body">
+        <div class="control-layout">
+          <div class="controls">
+            <h3>Assumptions</h3>
+            <p class="controls-intro">The baseline values match the costs you just reviewed.</p>
+
+            <div class="control">
+              <label for="demand">Annual demand <output id="demandOut" for="demand">12,000 units</output></label>
+              <input id="demand" type="range" min="8000" max="20000" step="1000" value="12000">
+            </div>
+
+            <div class="control">
+              <label for="tariff">PacificCore tariff <output id="tariffOut" for="tariff">12%</output></label>
+              <input id="tariff" type="range" min="0" max="25" step="1" value="12">
+            </div>
+
+            <div class="control">
+              <label for="freight">PacificCore freight level <output id="freightOut" for="freight">100%</output></label>
+              <input id="freight" type="range" min="60" max="200" step="10" value="100">
+            </div>
+
+            <div class="control">
+              <label for="leadTime">PacificCore lead time <output id="leadTimeOut" for="leadTime">70 days</output></label>
+              <input id="leadTime" type="range" min="30" max="120" step="5" value="70">
+            </div>
+
+            <div class="control">
+              <label for="defect">PacificCore defect rate <output id="defectOut" for="defect">4.0%</output></label>
+              <input id="defect" type="range" min="0.5" max="8" step="0.5" value="4">
+            </div>
+
+            <div class="control">
+              <label for="disruption">Disruption exposure <output id="disruptionOut" for="disruption">100%</output></label>
+              <input id="disruption" type="range" min="50" max="200" step="10" value="100">
+            </div>
+
+            <div class="control">
+              <label for="carrying">Annual inventory carrying rate <output id="carryingOut" for="carrying">20%</output></label>
+              <input id="carrying" type="range" min="10" max="35" step="1" value="20">
+            </div>
+
+            <button class="secondary-button" id="resetAssumptions" type="button">Restore Baseline</button>
+          </div>
+
+          <div class="results-panel">
+            <h3>Live Annual Cost Comparison</h3>
+            <div class="winner-callout" id="liveWinner" aria-live="polite"></div>
+            <div class="table-wrap" id="liveTable"></div>
+            <div class="chart" id="liveChart" aria-label="Live annual total cost of ownership comparison"></div>
+
+            <div class="decision-history" aria-label="Your earlier supplier selections">
+              <div class="history-item"><span>Price choice</span><strong id="history1">Not selected</strong></div>
+              <div class="history-item"><span>Landed-cost choice</span><strong id="history2">Not selected</strong></div>
+              <div class="history-item"><span>TCO choice</span><strong id="history3">Not selected</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <section class="decision-panel" aria-labelledby="decisionTitle">
+          <h3 id="decisionTitle">Make Your Final Recommendation</h3>
+          <p style="margin:0;color:var(--muted);">Choose a supplier and at least two factors. The applet will create a decision note using the current assumptions.</p>
+
+          <div class="decision-grid">
+            <div>
+              <label for="finalSupplier"><strong>Recommended supplier</strong></label>
+              <select id="finalSupplier" style="margin-top:6px;">
+                <option value="">Select a supplier</option>
+                <option value="pacific">PacificCore</option>
+                <option value="heartland">Heartland Components</option>
+                <option value="local">LocalTech Systems</option>
+              </select>
+            </div>
+
+            <fieldset>
+              <legend>Most important factors</legend>
+              <div class="checkbox-list">
+                <label><input type="checkbox" name="reason" value="landed cost"> Landed cost</label>
+                <label><input type="checkbox" name="reason" value="quality and defect costs"> Quality and defect costs</label>
+                <label><input type="checkbox" name="reason" value="lead time and inventory implications"> Lead time and inventory implications</label>
+                <label><input type="checkbox" name="reason" value="supply continuity and disruption exposure"> Supply continuity and disruption exposure</label>
+                <label><input type="checkbox" name="reason" value="supplier management requirements"> Supplier management requirements</label>
+                <label><input type="checkbox" name="reason" value="technical support and operating benefits"> Technical support and operating benefits</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="action-row" style="justify-content:flex-start;">
+            <button class="primary-button" id="generateNote" type="button">Generate My Decision Note</button>
+            <button class="copy-button" id="copyNote" type="button" hidden>Copy Note</button>
+            <span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span>
+          </div>
+
+          <div class="decision-note" id="decisionNote" tabindex="-1" aria-live="polite">
+            Your decision note will appear here.
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <details class="methodology">
+      <summary>How does the model calculate the costs?</summary>
+      <div class="methodology-body">
+        <p style="margin:0;">All calculations use an annual basis. The model intentionally simplifies a real sourcing analysis so you can see how each cost layer changes the decision.</p>
+        <ul>
+          <li><strong>Annual purchase cost</strong> = annual demand &times; quoted unit price.</li>
+          <li><strong>Total landed cost</strong> = purchase cost + freight + tariffs + inbound handling.</li>
+          <li><strong>Defect cost</strong> = annual demand &times; defect rate &times; estimated cost per defective unit.</li>
+          <li><strong>Inventory carrying cost</strong> = purchase cost &times; lead-time fraction of a year &times; annual carrying rate.</li>
+          <li><strong>Expected disruption cost</strong> = annual disruption probability &times; estimated financial impact.</li>
+          <li><strong>TCO</strong> = TLC + defect cost + inventory carrying cost + expediting + supplier management + expected disruption cost &minus; support benefits.</li>
+        </ul>
+      </div>
+    </details>
+
+    <p class="footnote">Instructor-created fictional scenario for educational use. Results are estimates, not promises about supplier performance.</p>
+  </main>
+
+  <script>
+    "use strict";
+
+    const baselineDemand = 12000;
+    const suppliers = [
+      {
+        id: "pacific",
+        name: "PacificCore",
+        type: "Overseas supplier",
+        unitPrice: 44,
+        freightPerUnit: 2.50,
+        handlingPerUnit: 0.50,
+        tariffRate: 0.12,
+        leadDays: 70,
+        defectRate: 0.04,
+        defectCost: 90,
+        expediting: 14000,
+        management: 18000,
+        disruptionProbability: 0.15,
+        disruptionImpact: 250000,
+        supportBenefit: 0
+      },
+      {
+        id: "heartland",
+        name: "Heartland Components",
+        type: "Regional supplier",
+        unitPrice: 49,
+        freightPerUnit: 1.20,
+        handlingPerUnit: 0.40,
+        tariffRate: 0,
+        leadDays: 25,
+        defectRate: 0.018,
+        defectCost: 70,
+        expediting: 6000,
+        management: 10000,
+        disruptionProbability: 0.06,
+        disruptionImpact: 200000,
+        supportBenefit: 8000
+      },
+      {
+        id: "local",
+        name: "LocalTech Systems",
+        type: "Domestic technical partner",
+        unitPrice: 53,
+        freightPerUnit: 0.40,
+        handlingPerUnit: 0.30,
+        tariffRate: 0,
+        leadDays: 8,
+        defectRate: 0.007,
+        defectCost: 55,
+        expediting: 2000,
+        management: 6000,
+        disruptionProbability: 0.03,
+        disruptionImpact: 150000,
+        supportBenefit: 25000
+      }
+    ];
+
+    const selections = { 1: null, 2: null, 3: null };
+    const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    const unitMoney = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const integer = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+    function assumptionsFromControls() {
+      return {
+        demand: Number(document.getElementById("demand").value),
+        tariff: Number(document.getElementById("tariff").value) / 100,
+        freightMultiplier: Number(document.getElementById("freight").value) / 100,
+        leadDays: Number(document.getElementById("leadTime").value),
+        defectRate: Number(document.getElementById("defect").value) / 100,
+        disruptionMultiplier: Number(document.getElementById("disruption").value) / 100,
+        carryingRate: Number(document.getElementById("carrying").value) / 100
+      };
+    }
+
+    function baselineAssumptions() {
+      return {
+        demand: baselineDemand,
+        tariff: 0.12,
+        freightMultiplier: 1,
+        leadDays: 70,
+        defectRate: 0.04,
+        disruptionMultiplier: 1,
+        carryingRate: 0.20
+      };
+    }
+
+    function calculateAll(a) {
+      return suppliers.map((base) => {
+        const s = { ...base };
+        if (s.id === "pacific") {
+          s.tariffRate = a.tariff;
+          s.freightPerUnit = base.freightPerUnit * a.freightMultiplier;
+          s.leadDays = a.leadDays;
+          s.defectRate = a.defectRate;
+        }
+
+        const purchase = a.demand * s.unitPrice;
+        const freight = a.demand * s.freightPerUnit;
+        const tariff = purchase * s.tariffRate;
+        const handling = a.demand * s.handlingPerUnit;
+        const tlc = purchase + freight + tariff + handling;
+        const defects = a.demand * s.defectRate * s.defectCost;
+        const inventory = purchase * (s.leadDays / 365) * a.carryingRate;
+        const disruption = s.disruptionProbability * s.disruptionImpact * a.disruptionMultiplier;
+        const tco = tlc + defects + inventory + s.expediting + s.management + disruption - s.supportBenefit;
+
+        return { ...s, purchase, freight, tariff, handling, tlc, defects, inventory, disruption, tco };
+      });
+    }
+
+    function lowest(results, metric) {
+      return results.reduce((best, item) => item[metric] < best[metric] ? item : best, results[0]);
+    }
+
+    function supplierById(id) {
+      return suppliers.find((supplier) => supplier.id === id);
+    }
+
+    function supplierCards(containerId, round, metric, results) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = results.map((s) => {
+        const displayValue = metric === "unitPrice" ? unitMoney.format(s.unitPrice) : money.format(s[metric]);
+        const note = metric === "unitPrice" ? "quoted price per unit" : (metric === "tlc" ? "annual total landed cost" : "annual total cost of ownership");
+        return `
+          <article class="supplier-card" data-card-round="${round}" data-supplier="${s.id}">
+            <h3>${s.name}</h3>
+            <span class="supplier-type">${s.type}</span>
+            <p class="price">${displayValue}</p>
+            <p class="price-note">${note}</p>
+            <button class="choose-button" type="button" data-round="${round}" data-supplier="${s.id}" aria-pressed="false">
+              Choose ${s.name}
+            </button>
+          </article>`;
+      }).join("");
+    }
+
+    function landedTable(results) {
+      const winner = lowest(results, "tlc");
+      return `
+        <table>
+          <caption>Annual delivered-cost calculation</caption>
+          <thead><tr><th scope="col">Supplier</th><th scope="col">Purchase</th><th scope="col">Freight</th><th scope="col">Tariff</th><th scope="col">Handling</th><th scope="col">TLC</th></tr></thead>
+          <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.purchase)}</td><td>${money.format(s.freight)}</td><td>${money.format(s.tariff)}</td><td>${money.format(s.handling)}</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tlc)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
+        </table>`;
+    }
+
+    function ownershipTable(results, compact = false) {
+      const winner = lowest(results, "tco");
+      if (compact) {
+        return `
+          <table>
+            <caption>Current annual estimates</caption>
+            <thead><tr><th scope="col">Supplier</th><th scope="col">Purchase</th><th scope="col">TLC</th><th scope="col">TCO</th></tr></thead>
+            <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.purchase)}</td><td>${money.format(s.tlc)}</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tco)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
+          </table>`;
+      }
+
+      return `
+        <table>
+          <caption>Annual total-cost-of-ownership calculation</caption>
+          <thead><tr><th scope="col">Supplier</th><th scope="col">TLC</th><th scope="col">Defects</th><th scope="col">Inventory</th><th scope="col">Expediting</th><th scope="col">Management</th><th scope="col">Disruption</th><th scope="col">Support benefit</th><th scope="col">TCO</th></tr></thead>
+          <tbody>${results.map(s => `<tr><th scope="row">${s.name}</th><td>${money.format(s.tlc)}</td><td>${money.format(s.defects)}</td><td>${money.format(s.inventory)}</td><td>${money.format(s.expediting)}</td><td>${money.format(s.management)}</td><td>${money.format(s.disruption)}</td><td>(${money.format(s.supportBenefit)})</td><td class="${s.id === winner.id ? "winner-cell" : ""}">${money.format(s.tco)}${s.id === winner.id ? " (lowest)" : ""}</td></tr>`).join("")}</tbody>
+        </table>`;
+    }
+
+    function renderChart(containerId, results, metric) {
+      const container = document.getElementById(containerId);
+      const max = Math.max(...results.map(s => s[metric]));
+      const winner = lowest(results, metric);
+      container.innerHTML = results.map(s => {
+        const width = Math.max(2, (s[metric] / max) * 100);
+        return `
+          <div class="bar-row">
+            <span class="bar-name">${s.name}${s.id === winner.id ? " · Lowest" : ""}</span>
+            <div class="bar-track" role="img" aria-label="${s.name}: ${money.format(s[metric])}${s.id === winner.id ? ", lowest" : ""}">
+              <div class="bar-fill ${s.id === winner.id ? "winner" : ""}" style="width:${width.toFixed(1)}%"></div>
+            </div>
+            <span class="bar-value">${money.format(s[metric])}</span>
+          </div>`;
+      }).join("");
+    }
+
+    function updateProgress(activeRound) {
+      for (let i = 1; i <= 4; i += 1) {
+        const item = document.getElementById(`progress${i}`);
+        item.classList.toggle("active", i === activeRound);
+        item.classList.toggle("complete", i < activeRound);
+        if (i === activeRound) item.setAttribute("aria-current", "step");
+        else item.removeAttribute("aria-current");
+      }
+      document.getElementById("progressText").textContent = `Round ${activeRound} of 4`;
+    }
+
+    function chooseSupplier(round, supplierId) {
+      selections[round] = supplierId;
+      const results = calculateAll(baselineAssumptions());
+      const metric = round === 1 ? "purchase" : (round === 2 ? "tlc" : "tco");
+      const winner = lowest(results, metric);
+      const selected = results.find(s => s.id === supplierId);
+      const labels = { purchase: "annual purchase cost", tlc: "total landed cost", tco: "total cost of ownership" };
+
+      document.querySelectorAll(`[data-card-round="${round}"]`).forEach(card => {
+        card.classList.toggle("selected", card.dataset.supplier === supplierId);
+      });
+      document.querySelectorAll(`button[data-round="${round}"]`).forEach(button => {
+        const pressed = button.dataset.supplier === supplierId;
+        button.setAttribute("aria-pressed", String(pressed));
+        button.textContent = pressed ? `Selected: ${supplierById(supplierId).name}` : `Choose ${supplierById(button.dataset.supplier).name}`;
+      });
+
+      const feedback = document.getElementById(`feedback${round}`);
+      if (selected.id === winner.id) {
+        feedback.className = "feedback success";
+        feedback.innerHTML = `<strong>${selected.name}</strong> has the lowest visible ${labels[metric]} at this stage. The next layer may change the comparison.`;
+      } else {
+        feedback.className = "feedback";
+        feedback.innerHTML = `You selected <strong>${selected.name}</strong>. Based only on the costs currently visible, <strong>${winner.name}</strong> is lowest. Your choice may still reflect a factor that has not been revealed yet.`;
+      }
+
+      document.getElementById(`reveal${round + 1}`).disabled = false;
+      document.getElementById(`history${round}`).textContent = selected.name;
+    }
+
+    function revealRound(round) {
+      const section = document.getElementById(`round${round}`);
+      section.hidden = false;
+      updateProgress(round);
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => section.querySelector("h2").setAttribute("tabindex", "-1"), 0);
+      window.setTimeout(() => section.querySelector("h2").focus(), 350);
+      if (round === 4) renderLive();
+    }
+
+    function updateOutputs(a) {
+      document.getElementById("demandOut").textContent = `${integer.format(a.demand)} units`;
+      document.getElementById("tariffOut").textContent = `${Math.round(a.tariff * 100)}%`;
+      document.getElementById("freightOut").textContent = `${Math.round(a.freightMultiplier * 100)}%`;
+      document.getElementById("leadTimeOut").textContent = `${a.leadDays} days`;
+      document.getElementById("defectOut").textContent = `${(a.defectRate * 100).toFixed(1)}%`;
+      document.getElementById("disruptionOut").textContent = `${Math.round(a.disruptionMultiplier * 100)}%`;
+      document.getElementById("carryingOut").textContent = `${Math.round(a.carryingRate * 100)}%`;
+    }
+
+    function renderLive() {
+      const assumptions = assumptionsFromControls();
+      const results = calculateAll(assumptions);
+      const priceWinner = lowest(results, "purchase");
+      const tlcWinner = lowest(results, "tlc");
+      const tcoWinner = lowest(results, "tco");
+      updateOutputs(assumptions);
+      document.getElementById("liveTable").innerHTML = ownershipTable(results, true);
+      renderChart("liveChart", results, "tco");
+      document.getElementById("liveWinner").innerHTML = `<strong>Current lowest estimated TCO: ${tcoWinner.name}</strong><br>Price leader: ${priceWinner.name}. Landed-cost leader: ${tlcWinner.name}. Move the assumptions to see whether these answers converge or change.`;
+      document.getElementById("copyStatus").textContent = "";
+    }
+
+    function resetAssumptions() {
+      const baseline = { demand: 12000, tariff: 12, freight: 100, leadTime: 70, defect: 4, disruption: 100, carrying: 20 };
+      Object.entries(baseline).forEach(([id, value]) => { document.getElementById(id).value = value; });
+      renderLive();
+    }
+
+    function naturalList(items) {
+      if (items.length === 1) return items[0];
+      if (items.length === 2) return `${items[0]} and ${items[1]}`;
+      return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+    }
+
+    function generateDecisionNote() {
+      const supplierId = document.getElementById("finalSupplier").value;
+      const reasons = [...document.querySelectorAll('input[name="reason"]:checked')].map(input => input.value);
+      const note = document.getElementById("decisionNote");
+      const copyButton = document.getElementById("copyNote");
+
+      if (!supplierId || reasons.length < 2) {
+        note.textContent = "Select a supplier and at least two important factors before generating your decision note.";
+        copyButton.hidden = true;
+        note.focus();
+        return;
+      }
+
+      const results = calculateAll(assumptionsFromControls());
+      const selected = results.find(s => s.id === supplierId);
+      const winner = lowest(results, "tco");
+      const context = selected.id === winner.id
+        ? `${selected.name} currently has the lowest estimated TCO in the model.`
+        : `${winner.name} currently has the lowest estimated TCO, so choosing ${selected.name} requires a business justification for accepting that cost difference.`;
+
+      note.textContent = `I recommend ${selected.name}. Under the current assumptions, its estimated annual purchase cost is ${money.format(selected.purchase)}, its total landed cost is ${money.format(selected.tlc)}, and its total cost of ownership is ${money.format(selected.tco)}. My recommendation is driven primarily by ${naturalList(reasons)}. ${context}`;
+      copyButton.hidden = false;
+      note.focus();
+    }
+
+    async function copyDecisionNote() {
+      const text = document.getElementById("decisionNote").textContent;
+      const status = document.getElementById("copyStatus");
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Decision note copied.";
+      } catch (error) {
+        status.textContent = "Copy was blocked. Select the note and copy it manually.";
+      }
+    }
+
+    const baselineResults = calculateAll(baselineAssumptions());
+    supplierCards("priceCards", 1, "unitPrice", baselineResults);
+    supplierCards("tlcChoices", 2, "tlc", baselineResults);
+    supplierCards("tcoChoices", 3, "tco", baselineResults);
+    document.getElementById("tlcTable").innerHTML = landedTable(baselineResults);
+    document.getElementById("tcoTable").innerHTML = ownershipTable(baselineResults);
+    renderChart("tlcChart", baselineResults, "tlc");
+    renderChart("tcoChart", baselineResults, "tco");
+
+    document.addEventListener("click", (event) => {
+      const choose = event.target.closest("button[data-round]");
+      if (choose) chooseSupplier(Number(choose.dataset.round), choose.dataset.supplier);
+    });
+
+    document.getElementById("reveal2").addEventListener("click", () => revealRound(2));
+    document.getElementById("reveal3").addEventListener("click", () => revealRound(3));
+    document.getElementById("reveal4").addEventListener("click", () => revealRound(4));
+    document.querySelectorAll('.controls input[type="range"]').forEach(input => input.addEventListener("input", renderLive));
+    document.getElementById("resetAssumptions").addEventListener("click", resetAssumptions);
+    document.getElementById("generateNote").addEventListener("click", generateDecisionNote);
+    document.getElementById("copyNote").addEventListener("click", copyDecisionNote);
+  </script>
+</body>
+</html>
